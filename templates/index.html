@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cone Mágico | Sistema de Gestão para Sorveteria & PDV</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=1">
+    <link rel="stylesheet" href="/static/css/style.css?v=1">
+</head>
+<body>
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-card">
+            <div class="login-brand" style="flex-direction:column; text-align:center; gap:0.55rem;">
+                <img src="/static/img/logo.svg?v=1" alt="Logo Cone Mágico" style="width:125px; height:125px; object-fit:contain; border-radius:24px; box-shadow:0 6px 18px rgba(219,39,119,0.18); background:#ffffff; padding:6px;">
+                <div>
+                    <h2 style="font-size:1.55rem; color:#0f172a; font-weight:800;">CONE MÁGICO</h2>
+                    <span style="font-size:0.84rem; color:#64748b;">Sorveteria Artesanal • Gestão & PDV</span>
+                </div>
+            </div>
+
+            <form id="form-login" onsubmit="event.preventDefault(); App.fazerLogin();">
+                <div class="form-group">
+                    <label for="login-email">Usuário de Acesso</label>
+                    <input type="text" id="login-email" class="form-control" placeholder="Digite seu usuário (ex: admin ou funcionario)" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="login-senha">Senha</label>
+                    <input type="password" id="login-senha" class="form-control" placeholder="Digite sua senha (padrão: 123456)" required autocomplete="current-password">
+                </div>
+                <div id="login-erro" style="display:none; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; padding:0.65rem; border-radius:8px; font-size:0.84rem; margin-bottom:1rem;"></div>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem; font-size:0.95rem;">
+                    🍦 Entrar no Sistema Cone Mágico
+                </button>
+            </form>
+
+            <div class="login-quick-list">
+                <div style="font-size:0.76rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.35rem;">
+                    Acesso Rápido (Clique para preencher — Senha: 123456):
+                </div>
+                <div id="login-quick-accounts"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-layout" id="app-main-layout" style="display:none;">
+        <!-- Barra Superior Mobile / Tablet -->
+        <header class="mobile-topbar no-print">
+            <div style="display:flex; align-items:center; gap:0.65rem;">
+                <img src="/static/img/logo.svg?v=1" alt="Logo Cone Mágico" style="width:40px; height:40px; object-fit:contain; border-radius:10px; background:#ffffff; padding:2px;">
+                <div>
+                    <strong style="display:block; font-size:0.98rem; color:#ffffff; line-height:1.2;">CONE MÁGICO</strong>
+                    <span style="font-size:0.72rem; color:#f9a8d4;">Sorveteria & PDV</span>
+                </div>
+            </div>
+            <button type="button" class="mobile-menu-btn" onclick="App.toggleMobileSidebar()">
+                ☰ Menu
+            </button>
+        </header>
+
+        <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="App.closeMobileSidebar()"></div>
+
+        <!-- Menu Lateral -->
+        <aside class="sidebar" id="app-sidebar">
+            <div class="brand">
+                <img src="/static/img/logo.svg?v=1" alt="Logo Cone Mágico" style="width:54px; height:54px; object-fit:contain; border-radius:14px; background:#ffffff; padding:3px; flex-shrink:0;">
+                <div style="flex:1;">
+                    <h1>CONE MÁGICO</h1>
+                    <span>Sorveteria Artesanal</span>
+                </div>
+                <button type="button" class="sidebar-close-btn" onclick="App.closeMobileSidebar()">✕</button>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-view="dashboard" data-admin-only="true" onclick="App.navigate('dashboard')">
+                    <span>📊</span> Visão Geral (Hoje)
+                </button>
+                <button class="nav-btn" data-view="pdv" onclick="App.navigate('pdv')">
+                    <span>🍦</span> PDV / Frente de Caixa
+                    <span class="badge-nav">Vendas</span>
+                </button>
+                <button class="nav-btn" data-view="cardapio" onclick="App.navigate('cardapio')">
+                    <span>🍨</span> Cardápio & Sabores
+                </button>
+                <button class="nav-btn" data-view="estoque" onclick="App.navigate('estoque')">
+                    <span>📦</span> Estoque & Insumos
+                    <span class="badge-nav" id="nav-badge-estoque" style="display:none; background:#ef4444; color:#fff;">!</span>
+                </button>
+                <button class="nav-btn" data-view="clientes" onclick="App.navigate('clientes')">
+                    <span>🎁</span> Clientes & Fidelidade
+                </button>
+                <button class="nav-btn" data-view="financeiro" data-admin-only="true" onclick="App.navigate('financeiro')">
+                    <span>💰</span> Financeiro & Balancete
+                </button>
+                <button class="nav-btn" data-view="despesas" data-admin-only="true" onclick="App.navigate('despesas')">
+                    <span>🏢</span> Despesas da Sorveteria
+                </button>
+                <button class="nav-btn" data-view="usuarios" data-admin-only="true" onclick="App.navigate('usuarios')">
+                    <span>👥</span> Equipe & Acessos
+                </button>
+            </nav>
+
+            <!-- Informações do Usuário Logado e Logout -->
+            <div class="user-switcher">
+                <label>Acesso Conectado:</label>
+                <div id="logged-user-name" style="font-weight:700; font-size:0.92rem; color:#ffffff; margin-top:0.15rem;"></div>
+                <div id="logged-user-email" style="font-size:0.75rem; color:#94a3b8;"></div>
+                <div class="user-role-pill" id="current-user-role" style="margin-bottom:0.8rem;"></div>
+                <button class="btn btn-sm btn-secondary" style="width:100%; background:rgba(255,255,255,0.08); color:#f8fafc; border-color:rgba(255,255,255,0.18);" onclick="App.logout()">
+                    🚪 Sair / Trocar Acesso
+                </button>
+            </div>
+        </aside>
+
+        <!-- Área Principal -->
+        <main class="main-content">
+            <!-- 1. VIEW: DASHBOARD EXECUTIVO (EXCLUSIVO ADMIN) -->
+            <section id="view-dashboard" class="view-section">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>Painel Geral — Sorveteria Cone Mágico</h2>
+                        <p id="dash-date-subtitle">Resumo operacional, vendas de balcão, estoque e resultados do mês</p>
+                    </div>
+                    <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                        <button class="btn btn-secondary" onclick="App.openModalCaixaRapido()">💸 Sangria / Suprimento</button>
+                        <button class="btn btn-primary" onclick="App.navigate('pdv')">🍦 Abrir PDV / Nova Venda</button>
+                    </div>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Vendas Hoje (PDV)</div>
+                        <div class="kpi-value" style="color: var(--primary);" id="kpi-faturamento-hoje">R$ 0,00</div>
+                        <div class="kpi-sub" id="kpi-pedidos-hoje-sub">0 pedidos • 0 sorvetes hoje</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Receita Recebida (Mês)</div>
+                        <div class="kpi-value" style="color: var(--success);" id="kpi-receita-paga">R$ 0,00</div>
+                        <div class="kpi-sub" id="kpi-pedidos-mes-sub">Entradas confirmadas no caixa</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Despesas da Loja (Mês)</div>
+                        <div class="kpi-value" style="color: var(--danger);" id="kpi-despesas-mes">R$ 0,00</div>
+                        <div class="kpi-sub" id="kpi-despesas-sub">Saídas e contas quitadas</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Lucro / Saldo Líquido (Mês)</div>
+                        <div class="kpi-value" id="kpi-saldo-liquido">R$ 0,00</div>
+                        <div class="kpi-sub" id="kpi-pendentes-sub">Receitas pagas - Despesas pagas</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Alertas de Estoque</div>
+                        <div class="kpi-value" style="color: var(--warning);" id="kpi-estoque-baixo">0</div>
+                        <div class="kpi-sub">Insumos abaixo do mínimo</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🍦 Últimas Vendas de Hoje (PDV)</h3>
+                            <button class="btn btn-sm btn-secondary" onclick="App.navigate('pdv')">Ir para o PDV</button>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Pedido / Hora</th>
+                                        <th>Itens Vendidos</th>
+                                        <th>Cliente</th>
+                                        <th>Pagto.</th>
+                                        <th>Total</th>
+                                        <th>Cupom</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-vendas-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>⚠️ Alertas de Estoque Baixo</h3>
+                            <button class="btn btn-sm btn-secondary" onclick="App.navigate('estoque')">Gerenciar Estoque</button>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Insumo / Produto</th>
+                                        <th>Atual</th>
+                                        <th>Mínimo</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-estoque-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD DE DESPESAS DA SORVETERIA NA VISÃO GERAL -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>🏢 Despesas & Saídas da Sorveteria (Cone Mágico)</h3>
+                            <small style="color:#64748b;">Contas operacionais, fornecedores de laticínios/polpas e sangrias rápidas de caixa</small>
+                        </div>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <button class="btn btn-sm btn-primary" onclick="App.openModalDespesaSorveteria()">+ Nova Despesa da Loja</button>
+                            <button class="btn btn-sm btn-secondary" onclick="App.navigate('despesas')">Ver Controle de Despesas</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vencimento</th>
+                                    <th>Categoria</th>
+                                    <th>Descrição da Despesa / Sangria</th>
+                                    <th>Forma Pagto.</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-despesas-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. VIEW: PDV / FRENTE DE CAIXA RÁPIDO (ADMIN & FUNCIONÁRIO) -->
+            <section id="view-pdv" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>🍦 PDV — Frente de Caixa (Cone Mágico)</h2>
+                        <p>Clique nos produtos para montar o pedido, pontuar no Fidelidade e emitir o Cupom</p>
+                    </div>
+                    <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                        <button class="btn btn-secondary" style="border-color:#d97706; color:#b45309;" onclick="App.openModalCaixaRapido()">
+                            💸 Lançar Sangria / Suprimento de Caixa
+                        </button>
+                        <button class="btn btn-secondary" onclick="App.openModalCliente()">
+                            + Cadastrar Cliente Fidelidade
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pdv-layout">
+                    <!-- Coluna Esquerda: Catálogo de Produtos Clicáveis -->
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header" style="margin-bottom:0.85rem;">
+                            <h3>🍨 Selecione os Sabores & Produtos</h3>
+                            <input type="text" id="pdv-busca-produto" class="form-control" style="max-width:240px;" placeholder="🔍 Buscar sabor ou item..." oninput="App.renderCatalogoPDV()">
+                        </div>
+
+                        <div class="pdv-cat-pills" id="pdv-cat-pills">
+                            <button type="button" class="pdv-cat-pill active" onclick="App.setCategoriaPDV('')">Todos</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Casquinha / Cascão')">🍦 Casquinhas & Cascões</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Copo / Sundae')">🍨 Copos & Sundaes</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Taças Especiais')">🍧 Taças Especiais</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Milkshake')">🥤 Milkshakes</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Picolé Artesanal')">🍡 Picolés</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Pote / Viagem')">🥡 Potes 1,5L</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Adicional / Calda')">🍫 Adicionais & Caldas</button>
+                        </div>
+
+                        <div id="pdv-products-grid" class="pdv-products-grid"></div>
+                    </div>
+
+                    <!-- Coluna Direita: Comanda / Carrinho de Venda -->
+                    <div class="pdv-cart-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:0.75rem; margin-bottom:0.85rem;">
+                            <div>
+                                <h3 style="font-size:1.08rem; color:#0f172a;">🧾 Pedido Atual (Caixa)</h3>
+                                <small style="color:#64748b;" id="pdv-operador-label">Atendente: -</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="App.limparCarrinhoPDV()">Limpar</button>
+                        </div>
+
+                        <div id="pdv-cart-items" style="min-height:110px; max-height:260px; overflow-y:auto; margin-bottom:0.85rem;"></div>
+
+                        <div class="form-group">
+                            <label>🎁 Cliente / Programa Fidelidade (Opcional)</label>
+                            <select id="pdv-cliente" class="form-control" onchange="App.aoSelecionarClientePDV()">
+                                <option value="">-- Cliente Balcão (Sem cadastro) --</option>
+                            </select>
+                            <div id="pdv-cliente-fidelidade-info" style="display:none; font-size:0.78rem; background:#fdf2f8; border:1px solid #fbcfe8; color:#9d174d; padding:0.45rem 0.65rem; border-radius:8px; margin-top:0.25rem;"></div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="margin-bottom:0.65rem;">
+                                <label>Atendimento</label>
+                                <select id="pdv-tipo-atendimento" class="form-control">
+                                    <option value="Balcão">Balcão</option>
+                                    <option value="Mesa">Mesa</option>
+                                    <option value="Viagem / Retirada">Viagem / Retirada</option>
+                                    <option value="Delivery">Delivery</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0.65rem;">
+                                <label>Desconto (R$)</label>
+                                <input type="number" step="0.50" min="0" id="pdv-desconto" class="form-control" value="0.00" oninput="App.renderCarrinhoPDV()">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="margin-bottom:0.65rem;">
+                                <label>Forma de Pagamento *</label>
+                                <select id="pdv-forma-pagamento" class="form-control" onchange="App.renderCarrinhoPDV()">
+                                    <option value="PIX">PIX</option>
+                                    <option value="Dinheiro">Dinheiro</option>
+                                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                    <option value="Cartão de Débito">Cartão de Débito</option>
+                                    <option value="Fidelidade / Prêmio">🎁 Resgate Fidelidade (10 Selos = Grátis)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0.65rem;">
+                                <label>Sabores / Observações</label>
+                                <input type="text" id="pdv-observacoes" class="form-control" placeholder="Ex: Sabores Pistache e Morango, sem chantilly...">
+                            </div>
+                        </div>
+
+                        <div class="pdv-total-banner">
+                            <div>
+                                <span style="display:block; font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#64748b;">Total a Pagar</span>
+                                <small style="color:#64748b;" id="pdv-qtd-itens-label">0 itens no pedido</small>
+                            </div>
+                            <strong id="pdv-total-valor">R$ 0,00</strong>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:1rem;" onclick="App.finalizarVendaPDV()">
+                            ✅ Finalizar Venda & Emitir Cupom
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MOVIMENTAÇÕES RÁPIDAS DE CAIXA (SANGRIA / SUPRIMENTO) -->
+                <div class="card" style="margin-top:1.45rem;">
+                    <div class="card-header">
+                        <div>
+                            <h3>💸 Movimentações Rápidas de Balcão (Sangria & Suprimento de Caixa)</h3>
+                            <small style="color:#64748b;">Despesas rápidas lançadas pelo funcionário no caixa (ex: gelo, troco, insumos de urgência)</small>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="App.openModalCaixaRapido()">+ Registrar Sangria / Suprimento</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Tipo de Operação</th>
+                                    <th>Motivo / Descrição</th>
+                                    <th>Meio</th>
+                                    <th>Responsável</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="caixa-rapido-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- HISTÓRICO DE PEDIDOS DO PDV -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📋 Histórico de Vendas & Pedidos Registrados</h3>
+                        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                            <input type="date" id="filtro-vendas-data" class="form-control" style="padding:0.35rem 0.6rem;" onchange="App.loadVendas()">
+                            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('filtro-vendas-data').value=''; App.loadVendas();">Ver Todos</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pedido / Data</th>
+                                    <th>Itens do Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Atendente</th>
+                                    <th>Pagamento</th>
+                                    <th>Total</th>
+                                    <th>Ações / Cupom</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vendas-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. VIEW: CARDÁPIO & SABORES -->
+            <section id="view-cardapio" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>🍨 Cardápio de Sabores, Casquinhas, Taças & Picolés</h2>
+                        <p>Produtos disponíveis no PDV, preços de venda, custos e disponibilidade no balcão</p>
+                    </div>
+                    <button class="btn btn-primary" data-admin-only="true" onclick="App.openModalProduto()">+ Novo Sabor / Produto</button>
+                </div>
+
+                <div class="card">
+                    <div class="filter-bar">
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:220px;">
+                            <label>Pesquisar Sabor ou Produto</label>
+                            <input type="text" id="filtro-prod-busca" class="form-control" placeholder="Ex: Pistache, Casquinha, Sundae, Milkshake..." oninput="App.loadProdutos()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Categoria</label>
+                            <select id="filtro-prod-categoria" class="form-control" onchange="App.loadProdutos()">
+                                <option value="">Todas as Categorias</option>
+                                <option value="Casquinha / Cascão">Casquinha / Cascão</option>
+                                <option value="Copo / Sundae">Copo / Sundae</option>
+                                <option value="Taças Especiais">Taças Especiais</option>
+                                <option value="Milkshake">Milkshake</option>
+                                <option value="Picolé Artesanal">Picolé Artesanal</option>
+                                <option value="Pote / Viagem">Pote / Viagem</option>
+                                <option value="Adicional / Calda">Adicional / Calda</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produto / Sabor</th>
+                                    <th>Categoria</th>
+                                    <th>Descrição / Acompanhamentos</th>
+                                    <th>Preço Venda</th>
+                                    <th>Status no Balcão</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="produtos-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. VIEW: CONTROLE DE ESTOQUE & INSUMOS -->
+            <section id="view-estoque" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>📦 Controle de Estoque & Insumos da Sorveteria</h2>
+                        <p>Monitoramento de bases lácteas, frutas, casquinhas, embalagens e alertas de reposição</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="App.openModalEstoque()">+ Cadastrar Insumo</button>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total de Itens Monitorados</div>
+                        <div class="kpi-value" id="est-kpi-total">0</div>
+                        <div class="kpi-sub">Insumos e embalagens ativos</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Itens em Alerta (Estoque Baixo)</div>
+                        <div class="kpi-value" style="color: var(--danger);" id="est-kpi-baixo">0</div>
+                        <div class="kpi-sub">Precisam de compra/reposição imediata</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Itens Abastecidos (OK)</div>
+                        <div class="kpi-value" style="color: var(--success);" id="est-kpi-ok">0</div>
+                        <div class="kpi-sub">Acima do estoque mínimo de segurança</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="filter-bar">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Categoria de Insumo</label>
+                            <select id="filtro-est-categoria" class="form-control" onchange="App.loadEstoque()">
+                                <option value="">Todas as Categorias</option>
+                                <option value="Bases & Laticínios">Bases & Laticínios</option>
+                                <option value="Polpas & Frutas">Polpas & Frutas para Sorvete</option>
+                                <option value="Casquinhas & Biscoitos">Casquinhas & Biscoitos</option>
+                                <option value="Embalagens & Copos">Embalagens, Copos & Potes</option>
+                                <option value="Caldas & Confeitos">Caldas, Nutella & Confeitos</option>
+                                <option value="Picolés Prontos">Picolés Prontos</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Situação</label>
+                            <select id="filtro-est-alerta" class="form-control" onchange="App.loadEstoque()">
+                                <option value="">Todos os Itens</option>
+                                <option value="baixo">⚠️ Apenas Estoque Baixo / Crítico</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Insumo / Material</th>
+                                    <th>Categoria</th>
+                                    <th>Qtd. Atual</th>
+                                    <th>Mínimo</th>
+                                    <th>Fornecedor</th>
+                                    <th>Situação</th>
+                                    <th>Movimentação Rápida</th>
+                                </tr>
+                            </thead>
+                            <tbody id="estoque-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. VIEW: CLIENTES & PROGRAMA FIDELIDADE -->
+            <section id="view-clientes" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>🎁 Clientes & Cartão Fidelidade Cone Mágico</h2>
+                        <p>A cada 10 sorvetes comprados, o cliente ganha 1 Sorvete Artesanal de prêmio!</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="App.openModalCliente()">+ Cadastrar Cliente</button>
+                </div>
+
+                <div class="card">
+                    <div class="filter-bar">
+                        <div class="form-group" style="margin-bottom:0; flex:1; min-width:240px;">
+                            <label>Buscar por Nome, CPF, Telefone ou Sabor Favorito</label>
+                            <input type="text" id="filtro-cliente-busca" class="form-control" placeholder="Digite para pesquisar..." oninput="App.loadClientes()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Status</label>
+                            <select id="filtro-cliente-status" class="form-control" onchange="App.loadClientes()">
+                                <option value="">Todos</option>
+                                <option value="VIP">VIP (Fidelidade)</option>
+                                <option value="Ativo">Ativo</option>
+                                <option value="Inativo">Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente / CPF</th>
+                                    <th>WhatsApp / Sabor Favorito</th>
+                                    <th>Cartão Fidelidade (Meta: 10 Selos)</th>
+                                    <th>Prêmios Já Resgatados</th>
+                                    <th>Total Comprado</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientes-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. VIEW: FINANCEIRO COMPLETO, FLUXO DE CAIXA E BALANCETE (EXCLUSIVO ADMIN) -->
+            <section id="view-financeiro" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>💰 Controle Financeiro, Fluxo de Caixa & Balancete</h2>
+                        <p>Gestão de receitas do PDV, encomendas, sangrias e despesas operacionais da sorveteria (Exclusivo ADMIN)</p>
+                    </div>
+                    <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                        <button class="btn btn-secondary" style="border-color:#7c3aed; color:#7c3aed;" id="btn-toggle-fluxo" onclick="App.toggleFluxoBalancete()">
+                            📑 Fluxo de Caixa & Balancete
+                        </button>
+                        <button class="btn btn-secondary" style="border-color:#db2777; color:#db2777;" id="btn-toggle-fin-dash" onclick="App.toggleDashboardFinanceiro()">
+                            📊 Gerar Dashboard Financeiro
+                        </button>
+                        <button class="btn btn-primary" onclick="App.openModalFinanceiro()">+ Novo Lançamento</button>
+                    </div>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Receitas Recebidas</div>
+                        <div class="kpi-value" style="color: var(--success);" id="fin-kpi-pagas">R$ 0,00</div>
+                        <div class="kpi-sub">Vendas PDV e encomendas quitadas</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Valores Pendentes</div>
+                        <div class="kpi-value" style="color: var(--warning);" id="fin-kpi-pendentes">R$ 0,00</div>
+                        <div class="kpi-sub" id="fin-kpi-pendentes-sub">Em aberto (A receber / A pagar)</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Despesas Pagas (Sorveteria)</div>
+                        <div class="kpi-value" style="color: var(--danger);" id="fin-kpi-despesas">R$ 0,00</div>
+                        <div class="kpi-sub">Saídas e fornecedores quitados</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Lucro / Saldo Líquido (Caixa)</div>
+                        <div class="kpi-value" id="fin-kpi-saldo">R$ 0,00</div>
+                        <div class="kpi-sub">Receitas pagas - Despesas pagas</div>
+                    </div>
+                </div>
+
+                <!-- PAINEL DE DASHBOARD FINANCEIRO GERADO SOB DEMANDA (PIZZA / BARRAS) -->
+                <div id="fin-dashboard-box" class="card fin-dash-panel" style="display:none;">
+                    <div class="card-header">
+                        <div>
+                            <h3 style="color:#be185d;">📊 Dashboard de Análise Financeira — Cone Mágico</h3>
+                            <small style="color:#64748b;" id="fin-dash-periodo-label">Análise detalhada do balanço geral e custos da sorveteria</small>
+                        </div>
+                        <div class="no-print" style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+                            <div class="chart-mode-toggle">
+                                <button type="button" class="chart-mode-btn active" id="btn-mode-pizza" onclick="App.setModoGrafico('pizza')">🍕 Pizza</button>
+                                <button type="button" class="chart-mode-btn" id="btn-mode-barras" onclick="App.setModoGrafico('barras')">📊 Barras</button>
+                            </div>
+                            <button class="btn btn-sm btn-secondary" onclick="App.imprimirDashboardFinanceiro()">🖨️ Imprimir / PDF</button>
+                            <button class="btn btn-sm btn-secondary" onclick="App.toggleDashboardFinanceiro()">✕ Fechar Dash</button>
+                        </div>
+                    </div>
+
+                    <div id="fin-dash-print-content">
+                        <div class="fin-indicators-row" id="fin-dash-mini-stats"></div>
+
+                        <div class="grid-2 grid-2-equal">
+                            <div style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:1.35rem;">
+                                <h4 style="font-size:1rem; margin-bottom:1.1rem; color:#0f172a; border-bottom:1px solid #f1f5f9; padding-bottom:0.6rem;">
+                                    📈 Balanço Geral (Receitas x Despesas x Pendentes)
+                                </h4>
+                                <div id="fin-chart-balanco"></div>
+                            </div>
+
+                            <div style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:1.35rem;">
+                                <h4 style="font-size:1rem; margin-bottom:1.1rem; color:#0f172a; border-bottom:1px solid #f1f5f9; padding-bottom:0.6rem;">
+                                    🏢 Despesas da Sorveteria por Categoria (Insumos, Energia, Aluguel...)
+                                </h4>
+                                <div id="fin-chart-despesas-cat"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAINEL: RELATÓRIO DE FLUXO DE CAIXA E BALANCETE SIMPLES -->
+                <div id="fin-fluxo-balancete-box" class="card" style="display:none; border:2px solid #ddd6fe; background:linear-gradient(180deg, #f5f3ff 0%, #ffffff 110px);">
+                    <div class="card-header">
+                        <div>
+                            <h3 style="color:#5b21b6;">📑 Relatório de Fluxo de Caixa & Balancete Simples — Cone Mágico</h3>
+                            <small style="color:#64748b;" id="fin-fluxo-periodo-label">Demonstrativo de entradas de vendas, saídas da sorveteria e saldo acumulado</small>
+                        </div>
+                        <div class="no-print" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <button class="btn btn-sm btn-secondary" onclick="App.imprimirFluxoBalancete()">🖨️ Imprimir Relatório / PDF</button>
+                            <button class="btn btn-sm btn-secondary" onclick="App.toggleFluxoBalancete()">✕ Fechar Relatório</button>
+                        </div>
+                    </div>
+
+                    <div id="fin-fluxo-print-content">
+                        <h4 style="font-size:1rem; color:#0f172a; margin-bottom:0.85rem;">1. Balancete Simples (Entradas x Saídas por Categoria)</h4>
+                        <div class="grid-2 grid-2-equal" style="margin-bottom:1.25rem;">
+                            <div style="background:#ffffff; border:1px solid #bbf7d0; border-radius:10px; padding:1.1rem;">
+                                <h5 style="color:#15803d; font-size:0.92rem; margin-bottom:0.75rem; border-bottom:1px solid #dcfce7; padding-bottom:0.45rem;">
+                                    🟢 ENTRADAS (Vendas PDV, Encomendas & Suprimentos)
+                                </h5>
+                                <div id="balancete-entradas-body"></div>
+                            </div>
+                            <div style="background:#ffffff; border:1px solid #fecaca; border-radius:10px; padding:1.1rem;">
+                                <h5 style="color:#b91c1c; font-size:0.92rem; margin-bottom:0.75rem; border-bottom:1px solid #fee2e2; padding-bottom:0.45rem;">
+                                    🔴 SAÍDAS (Despesas da Sorveteria & Sangrias)
+                                </h5>
+                                <div id="balancete-saidas-body"></div>
+                            </div>
+                        </div>
+
+                        <div id="balancete-resumo-final" style="margin-bottom:1.75rem;"></div>
+
+                        <h4 style="font-size:1rem; color:#0f172a; margin-bottom:0.85rem;">2. Demonstrativo de Fluxo de Caixa (Movimentação Cronológica)</h4>
+                        <div class="table-wrap" style="background:#ffffff; border:1px solid var(--border); border-radius:10px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Histórico / Descrição</th>
+                                        <th>Categoria</th>
+                                        <th>Status</th>
+                                        <th style="color:#15803d;">Entrada (+)</th>
+                                        <th style="color:#b91c1c;">Saída (-)</th>
+                                        <th>Saldo Caixa (=)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fluxo-caixa-tbody"></tbody>
+                                <tfoot id="fluxo-caixa-tfoot"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="filter-bar">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Mês de Referência</label>
+                            <input type="month" id="filtro-fin-mes" class="form-control" onchange="App.loadFinanceiro()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Tipo</label>
+                            <select id="filtro-fin-tipo" class="form-control" onchange="App.loadFinanceiro()">
+                                <option value="">Receitas e Despesas</option>
+                                <option value="Receita">Apenas Receitas (Entradas)</option>
+                                <option value="Despesa">Apenas Despesas (Saídas)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Status</label>
+                            <select id="filtro-fin-status" class="form-control" onchange="App.loadFinanceiro()">
+                                <option value="">Todos</option>
+                                <option value="Pago">Pago / Quitado</option>
+                                <option value="Pendente">Pendente</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" onclick="document.getElementById('filtro-fin-mes').value=''; App.loadFinanceiro();">Ver Todo o Período</button>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vencimento / Data</th>
+                                    <th>Tipo / Categoria</th>
+                                    <th>Descrição / Origem</th>
+                                    <th>Forma Pagto.</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ações / Recibo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="financeiro-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. VIEW: DESPESAS EXCLUSIVAS DA SORVETERIA (EXCLUSIVO ADMIN) -->
+            <section id="view-despesas" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>🏢 Controle de Despesas da Sorveteria — Cone Mágico</h2>
+                        <p>Gestão de contas fixas, energia dos freezers, fornecedores de laticínios/insumos, embalagens e sangrias</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="App.openModalDespesaSorveteria()">+ Nova Despesa da Sorveteria</button>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Despesas Pagas (Quitadas)</div>
+                        <div class="kpi-value" style="color: var(--danger);" id="desp-kpi-pagas">R$ 0,00</div>
+                        <div class="kpi-sub">Contas e fornecedores já pagos</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Contas a Pagar (Pendentes)</div>
+                        <div class="kpi-value" style="color: var(--warning);" id="desp-kpi-pendentes">R$ 0,00</div>
+                        <div class="kpi-sub">Boletos e vencimentos em aberto</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Custo Total da Sorveteria</div>
+                        <div class="kpi-value" id="desp-kpi-total">R$ 0,00</div>
+                        <div class="kpi-sub">Soma de pagas + pendentes</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Maior Categoria de Custo</div>
+                        <div class="kpi-value" style="font-size:1.25rem; color: var(--primary);" id="desp-kpi-maior-cat">-</div>
+                        <div class="kpi-sub" id="desp-kpi-maior-valor">No período selecionado</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="filter-bar">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Mês de Referência</label>
+                            <input type="month" id="filtro-desp-mes" class="form-control" onchange="App.loadDespesasSorveteria()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Categoria de Custo</label>
+                            <select id="filtro-desp-categoria" class="form-control" onchange="App.loadDespesasSorveteria()">
+                                <option value="">Todas as Categorias</option>
+                                <option value="Fornecedores / Laticínios & Polpas">Fornecedores / Laticínios & Polpas</option>
+                                <option value="Embalagens & Casquinhas">Embalagens & Casquinhas</option>
+                                <option value="Energia Elétrica (Freezers)">Energia Elétrica (Freezers)</option>
+                                <option value="Aluguel da Sorveteria">Aluguel da Sorveteria</option>
+                                <option value="Água & Saneamento">Água & Saneamento</option>
+                                <option value="Internet & Sistema">Internet & Sistema</option>
+                                <option value="Manutenção de Máquinas / Freezers">Manutenção de Máquinas / Freezers</option>
+                                <option value="Folha / Pagamento Funcionários">Folha / Pagamento Funcionários</option>
+                                <option value="Sangria / Despesa Rápida de Caixa">Sangria / Despesa Rápida de Caixa</option>
+                                <option value="Limpeza & Descartáveis">Limpeza & Descartáveis</option>
+                                <option value="Impostos / Contabilidade">Impostos / Contabilidade</option>
+                                <option value="Outros">Outras Despesas</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Status</label>
+                            <select id="filtro-desp-status" class="form-control" onchange="App.loadDespesasSorveteria()">
+                                <option value="">Todos</option>
+                                <option value="Pago">Pago / Quitado</option>
+                                <option value="Pendente">Pendente (A Pagar)</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" onclick="document.getElementById('filtro-desp-mes').value=''; App.loadDespesasSorveteria();">Ver Todo o Período</button>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vencimento</th>
+                                    <th>Categoria da Despesa</th>
+                                    <th>Descrição / Lançado por</th>
+                                    <th>Forma Pagto.</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="despesas-sorveteria-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. VIEW: EQUIPE & ACESSOS (ADMIN E FUNCIONÁRIO) -->
+            <section id="view-usuarios" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>👥 Equipe & Controle de Acessos (ADMIN e Funcionários)</h2>
+                        <p>Gerencie o acesso de Dono (ADMIN) e os acessos dos Funcionários do caixa e atendimento</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="App.openModalUsuario()">+ Novo Acesso / Funcionário</button>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Perfil de Acesso</th>
+                                    <th>Login de Acesso</th>
+                                    <th>Cargo / Função</th>
+                                    <th>Turno / Horário</th>
+                                    <th>Telefone</th>
+                                    <th>Salário Base</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuarios-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: SANGRIA / SUPRIMENTO RÁPIDO DE CAIXA (ACESSÍVEL POR FUNCIONÁRIO E ADMIN) -->
+    <div class="modal-backdrop" id="modal-caixa-rapido">
+        <div class="modal" style="max-width:540px;">
+            <div class="modal-header">
+                <h3>💸 Lançamento Rápido de Caixa (Balcão)</h3>
+                <button class="btn btn-sm btn-secondary" onclick="App.closeModal('modal-caixa-rapido')">✕</button>
+            </div>
+            <form id="form-caixa-rapido" onsubmit="event.preventDefault(); App.salvarCaixaRapido();">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Operação no Caixa *</label>
+                        <select id="cx-natureza" class="form-control">
+                            <option value="Sangria">🔻 Sangria / Despesa Rápida de Balcão (Saída)</option>
+                            <option value="Suprimento">🔺 Suprimento / Reforço de Troco (Entrada)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Meio Utilizado</label>
+                        <select id="cx-forma" class="form-control">
+                            <option value="Dinheiro">Dinheiro (Gaveta)</option>
+                            <option value="PIX">PIX</option>
+                            <option value="Cartão de Débito">Cartão de Débito</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Motivo / Descrição *</label>
+                    <input type="text" id="cx-descricao" class="form-control" required placeholder="Ex: Compra de saco de gelo, água mineral, troco inicial...">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Valor (R$) *</label>
+                        <input type="number" step="0.01" min="0.01" id="cx-valor" class="form-control" required placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label>Observações (Opcional)</label>
+                        <input type="text" id="cx-obs" class="form-control" placeholder="Ex: Nota fiscal entregue na gaveta">
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-caixa-rapido')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar no Caixa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PRODUTO / SABOR DO CARDÁPIO -->
+    <div class="modal-backdrop" id="modal-produto">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-produto-titulo">Novo Sabor / Produto do Cardápio</h3>
+                <button class="btn btn-sm btn-secondary" onclick="App.closeModal('modal-produto')">✕</button>
+            </div>
+            <form id="form-produto" onsubmit="event.preventDefault(); App.salvarProduto();">
+                <input type="hidden" id="prod-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome do Produto / Sorvete *</label>
+                        <input type="text" id="prod-nome" class="form-control" required placeholder="Ex: Cascão Trufado 2 Bolas">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria *</label>
+                        <select id="prod-categoria" class="form-control">
+                            <option value="Casquinha / Cascão">Casquinha / Cascão</option>
+                            <option value="Copo / Sundae">Copo / Sundae</option>
+                            <option value="Taças Especiais">Taças Especiais</option>
+                            <option value="Milkshake">Milkshake</option>
+                            <option value="Picolé Artesanal">Picolé Artesanal</option>
+                            <option value="Pote / Viagem">Pote / Viagem</option>
+                            <option value="Adicional / Calda">Adicional / Calda</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Sabores / Detalhes / Acompanhamentos</label>
+                    <input type="text" id="prod-detalhe" class="form-control" placeholder="Ex: Sabores Pistache, Ninho Trufado, Morango ou Chocolate Belga">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Preço de Venda (R$) *</label>
+                        <input type="number" step="0.01" id="prod-preco" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Custo Estimado (R$)</label>
+                        <input type="number" step="0.01" id="prod-custo" class="form-control" value="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Disponibilidade</label>
+                        <select id="prod-disponivel" class="form-control">
+                            <option value="1">Disponível no PDV</option>
+                            <option value="0">Esgotado Temporariamente</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-produto')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Produto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ESTOQUE / INSUMO -->
+    <div class="modal-backdrop" id="modal-estoque">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-estoque-titulo">Cadastrar Insumo no Estoque</h3>
+                <button class="btn btn-sm btn-secondary" onclick="App.closeModal('modal-estoque')">✕</button>
+            </div>
+            <form id="form-estoque" onsubmit="event.preventDefault(); App.salvarEstoque();">
+                <input type="hidden" id="est-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome do Insumo / Material *</label>
+                        <input type="text" id="est-item" class="form-control" required placeholder="Ex: Base Láctea 10L ou Casquinha Waffle">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria *</label>
+                        <select id="est-categoria" class="form-control">
+                            <option value="Bases & Laticínios">Bases & Laticínios</option>
+                            <option value="Polpas & Frutas">Polpas & Frutas</option>
+                            <option value="Casquinhas & Biscoitos">Casquinhas & Biscoitos</option>
+                            <option value="Embalagens & Copos">Embalagens & Copos</option>
+                            <option value="Caldas & Confeitos">Caldas & Confeitos</option>
+                            <option value="Picolés Prontos">Picolés Prontos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Unidade</label>
+                        <select id="est-unidade" class="form-control">
+                            <option value="un">Unidade (un)</option>
+                            <option value="kg">Quilo (kg)</option>
+                            <option value="L">Litro (L)</option>
+                            <option value="cx">Caixa (cx)</option>
+                            <option value="pct">Pacote (pct)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantidade Atual *</label>
+                        <input type="number" step="0.1" id="est-atual" class="form-control" required value="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Estoque Mínimo (Alerta) *</label>
+                        <input type="number" step="0.1" id="est-minimo" class="form-control" required value="5">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Custo de Reposição (R$)</label>
+                        <input type="number" step="0.01" id="est-custo" class="form-control" value="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Fornecedor Principal</label>
+                        <input type="text" id="est-fornecedor" class="form-control" placeholder="Ex: Laticínios Serra Dourada">
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-estoque')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar no Estoque</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CLIENTE & FIDELIDADE -->
+    <div class="modal-backdrop" id="modal-cliente">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-cliente-titulo">Cadastrar Cliente no Programa Fidelidade</h3>
+                <button class="btn btn-sm btn-secondary" onclick="App.closeModal('modal-cliente')">✕</button>
+            </div>
+            <form id="form-cliente" onsubmit="event.preventDefault(); App.salvarCliente();">
+                <input type="hidden" id="cli-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo *</label>
+                        <input type="text" id="cli-nome" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>CPF (Opcional)</label>
+                        <input type="text" id="cli-cpf" class="form-control" placeholder="000.000.000-00">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Telefone / WhatsApp *</label>
+                        <input type="text" id="cli-telefone" class="form-control" placeholder="(11) 99999-9999" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Sabor / Pedido Favorito</label>
+                        <input type="text" id="cli-sabor" class="form-control" placeholder="Ex: Cascão Duplo Pistache ou Sundae Especial">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Selos Fidelidade Acumulados (A cada 10 = 1 Grátis)</label>
+                        <input type="number" min="0" id="cli-pontos" class="form-control" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="cli-status" class="form-control">
+                            <option value="Ativo">Ativo</option>
+                            <option value="VIP">VIP (Fidelidade)</option>
+                            <option value="Inativo">Inativo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Observações / Preferências</label>
+                    <textarea id="cli-obs" class="form-control" placeholder="Ex: Intolerante a lactose, prefere linha zero açúcar..."></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-cliente')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: LANÇAMENTO FINANCEIRO (EXCLUSIVO ADMIN) -->
+    <div class="modal-backdrop" id="modal-financeiro">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-financeiro-titulo">Lançamento Financeiro</h3>
+                <button class="btn btn-sm btn-secondary" onclick="App.closeModal('modal-financeiro')">✕</button>
+            </div>
+            <form id="form-financeiro" onsubmit="event.preventDefault(); App.salvarFinanceiro();">
+                <input type="hidden" id="fin-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Lançamento</label>
+                        <select id="fin-tipo" class="form-control" onchange="App.aoMudarTipoFinanceiro(this.value)">
+                            <option value="Receita">Receita (Entrada de Venda / Evento)</option>
+                            <option value="Despesa">Despesa (Custo da Sorveteria)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="fin-categoria" class="form-control"></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descrição *</label>
+                    <input type="text" id="fin-descricao" class="form-control" required placeholder="Ex: Encomenda de Picolés p/ Festa ou Conta de Energia dos Freezers...">
+                </div>
+                <div class="form-row" id="fin-vinculo-cliente-row">
+                    <div class="form-group">
+                        <label>Cliente (Opcional — Para Receitas)</label>
+                        <select id="fin-cliente" class="form-control">
+                            <option value="">-- Nenhum / Balcão Geral --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Responsável pelo Lançamento</label>
+                        <select id="fin-funcionario" class="form-control">
+                            <option value="">-- Sorveteria Geral --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Valor (R$) *</label>
+                        <input type="number" step="0.01" id="fin-valor" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Data de Vencimento / Competência *</label>
+                        <input type="date" id="fin-vencimento" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status do Pagamento</label>
+                        <select id="fin-status" class="form-control">
+                            <option value="Pago">Pago / Quitado</option>
+                            <option value="Pendente">Pendente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Forma de Pagamento</label>
+                        <select id="fin-forma" class="form-control">
+                            <option value="PIX">PIX</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Cartão de Débito">Cartão de Débito</option>
+                            <option value="Transferência">Transferência / Boleto</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-financeiro')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Lançamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CADASTRO / EDIÇÃO DE USUÁRIO (ADMIN E FUNCIONÁRIO) -->
+    <div class="modal-backdrop" id="modal-usuario">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-usuario-titulo">Cadastrar Colaborador / Acesso</h3>
+                <button class="btn btn-sm btn-secondary" onclick="App.closeModal('modal-usuario')">✕</button>
+            </div>
+            <form id="form-usuario" onsubmit="event.preventDefault(); App.salvarUsuario();">
+                <input type="hidden" id="usr-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo *</label>
+                        <input type="text" id="usr-nome" class="form-control" required placeholder="Ex: Camila Rocha">
+                    </div>
+                    <div class="form-group">
+                        <label>Perfil de Acesso *</label>
+                        <select id="usr-perfil" class="form-control">
+                            <option value="funcionario">🍦 FUNCIONÁRIO (PDV, Pedidos, Sangria, Cardápio, Estoque e Clientes)</option>
+                            <option value="admin">👑 ADMIN — Dono (Acesso Total + Lucro, Balancete, Despesas e Equipe)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cargo / Função na Sorveteria</label>
+                        <input type="text" id="usr-cargo" class="form-control" placeholder="Ex: Operador(a) de Caixa, Atendente de Balcão, Gerente...">
+                    </div>
+                    <div class="form-group">
+                        <label>Turno de Trabalho</label>
+                        <select id="usr-turno" class="form-control">
+                            <option value="Manhã / Tarde (10h às 18h)">Manhã / Tarde (10h às 18h)</option>
+                            <option value="Tarde / Noite (14h às 22h)">Tarde / Noite (14h às 22h)</option>
+                            <option value="Integral">Integral</option>
+                            <option value="Final de Semana / Extra">Final de Semana / Extra</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Usuário ou E-mail de Login *</label>
+                        <input type="text" id="usr-email" class="form-control" required placeholder="Ex: funcionario, camila ou admin">
+                    </div>
+                    <div class="form-group">
+                        <label>Senha de Acesso (deixe em branco p/ manter)</label>
+                        <input type="password" id="usr-senha" class="form-control" placeholder="Padrão: 123456">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Telefone / WhatsApp</label>
+                        <input type="text" id="usr-telefone" class="form-control" placeholder="(11) 99999-9999">
+                    </div>
+                    <div class="form-group">
+                        <label>Salário Base Mensal (R$)</label>
+                        <input type="number" step="0.01" id="usr-salario" class="form-control" value="1850.00">
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-usuario')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Acesso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="/static/js/app.js?v=1"></script>
+</body>
+</html>
