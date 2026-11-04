@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cone Mágico | Sistema de Gestão para Sorveteria & PDV</title>
-    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=1">
-    <link rel="stylesheet" href="/static/css/style.css?v=1">
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=3">
+    <link rel="stylesheet" href="/static/css/style.css?v=3">
 </head>
 <body>
     <!-- TELA DE LOGIN -->
     <div id="login-screen" class="login-screen">
         <div class="login-card">
             <div class="login-brand" style="flex-direction:column; text-align:center; gap:0.55rem;">
-                <img src="/static/img/logo.svg?v=1" alt="Logo Cone Mágico" style="width:125px; height:125px; object-fit:contain; border-radius:24px; box-shadow:0 6px 18px rgba(219,39,119,0.18); background:#ffffff; padding:6px;">
+                <img src="/static/img/logo.svg?v=3" alt="Logo Cone Mágico" style="width:120px; height:120px; object-fit:contain; border-radius:24px; box-shadow:0 6px 18px rgba(219,39,119,0.18); background:#ffffff; padding:6px;">
                 <div>
                     <h2 style="font-size:1.55rem; color:#0f172a; font-weight:800;">CONE MÁGICO</h2>
-                    <span style="font-size:0.84rem; color:#64748b;">Sorveteria Artesanal • Gestão & PDV</span>
+                    <span style="font-size:0.84rem; color:#64748b;">Sorveteria • Gestão & PDV</span>
                 </div>
             </div>
 
@@ -63,10 +63,10 @@
         <!-- Menu Lateral -->
         <aside class="sidebar" id="app-sidebar">
             <div class="brand">
-                <img src="/static/img/logo.svg?v=1" alt="Logo Cone Mágico" style="width:54px; height:54px; object-fit:contain; border-radius:14px; background:#ffffff; padding:3px; flex-shrink:0;">
+                <img src="/static/img/logo.svg?v=3" alt="Logo Cone Mágico" style="width:54px; height:54px; object-fit:contain; border-radius:14px; background:#ffffff; padding:3px; flex-shrink:0;">
                 <div style="flex:1;">
                     <h1>CONE MÁGICO</h1>
-                    <span>Sorveteria Artesanal</span>
+                    <span>Sorveteria & PDV</span>
                 </div>
                 <button type="button" class="sidebar-close-btn" onclick="App.closeMobileSidebar()">✕</button>
             </div>
@@ -261,8 +261,8 @@
                             <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Copo / Sundae')">🍨 Copos & Sundaes</button>
                             <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Taças Especiais')">🍧 Taças Especiais</button>
                             <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Milkshake')">🥤 Milkshakes</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Picolé Artesanal')">🍡 Picolés</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Pote / Viagem')">🥡 Potes 1,5L</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Picolé')">🍡 Picolés</button>
+                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Pote / Viagem')">🥡 Potes 2L</button>
                             <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Adicional / Calda')">🍫 Adicionais & Caldas</button>
                         </div>
 
@@ -318,7 +318,7 @@
                             </div>
                             <div class="form-group" style="margin-bottom:0.65rem;">
                                 <label>Sabores / Observações</label>
-                                <input type="text" id="pdv-observacoes" class="form-control" placeholder="Ex: Sabores Pistache e Morango, sem chantilly...">
+                                <input type="text" id="pdv-observacoes" class="form-control" placeholder="Ex: Sabores Flocos e Morango, cobertura de chocolate...">
                             </div>
                         </div>
 
@@ -404,7 +404,7 @@
                     <div class="filter-bar">
                         <div class="form-group" style="margin-bottom:0; flex:1; min-width:220px;">
                             <label>Pesquisar Sabor ou Produto</label>
-                            <input type="text" id="filtro-prod-busca" class="form-control" placeholder="Ex: Pistache, Casquinha, Sundae, Milkshake..." oninput="App.loadProdutos()">
+                            <input type="text" id="filtro-prod-busca" class="form-control" placeholder="Ex: Casquinha, Flocos, Sundae, Milkshake, Picolé..." oninput="App.loadProdutos()">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label>Categoria</label>
@@ -414,7 +414,7 @@
                                 <option value="Copo / Sundae">Copo / Sundae</option>
                                 <option value="Taças Especiais">Taças Especiais</option>
                                 <option value="Milkshake">Milkshake</option>
-                                <option value="Picolé Artesanal">Picolé Artesanal</option>
+                                <option value="Picolé">Picolé</option>
                                 <option value="Pote / Viagem">Pote / Viagem</option>
                                 <option value="Adicional / Calda">Adicional / Calda</option>
                             </select>
@@ -444,7 +444,7 @@
                 <div class="page-header">
                     <div class="page-title">
                         <h2>📦 Controle de Estoque & Insumos da Sorveteria</h2>
-                        <p>Monitoramento de bases lácteas, frutas, casquinhas, embalagens e alertas de reposição</p>
+                        <p>Monitoramento de caixas de sorvete 10L, picolés, casquinhas, embalagens e alertas de reposição</p>
                     </div>
                     <button class="btn btn-primary" onclick="App.openModalEstoque()">+ Cadastrar Insumo</button>
                 </div>
@@ -473,11 +473,10 @@
                             <label>Categoria de Insumo</label>
                             <select id="filtro-est-categoria" class="form-control" onchange="App.loadEstoque()">
                                 <option value="">Todas as Categorias</option>
-                                <option value="Bases & Laticínios">Bases & Laticínios</option>
-                                <option value="Polpas & Frutas">Polpas & Frutas para Sorvete</option>
+                                <option value="Massas & Caixas 10L">Massas & Caixas 10L</option>
                                 <option value="Casquinhas & Biscoitos">Casquinhas & Biscoitos</option>
                                 <option value="Embalagens & Copos">Embalagens, Copos & Potes</option>
-                                <option value="Caldas & Confeitos">Caldas, Nutella & Confeitos</option>
+                                <option value="Caldas & Confeitos">Caldas, Coberturas & Confeitos</option>
                                 <option value="Picolés Prontos">Picolés Prontos</option>
                             </select>
                         </div>
@@ -514,7 +513,7 @@
                 <div class="page-header">
                     <div class="page-title">
                         <h2>🎁 Clientes & Cartão Fidelidade Cone Mágico</h2>
-                        <p>A cada 10 sorvetes comprados, o cliente ganha 1 Sorvete Artesanal de prêmio!</p>
+                        <p>A cada 10 sorvetes comprados, o cliente ganha 1 Sorvete grátis de prêmio!</p>
                     </div>
                     <button class="btn btn-primary" onclick="App.openModalCliente()">+ Cadastrar Cliente</button>
                 </div>
@@ -774,7 +773,7 @@
                             <label>Categoria de Custo</label>
                             <select id="filtro-desp-categoria" class="form-control" onchange="App.loadDespesasSorveteria()">
                                 <option value="">Todas as Categorias</option>
-                                <option value="Fornecedores / Laticínios & Polpas">Fornecedores / Laticínios & Polpas</option>
+                                <option value="Fornecedores / Caixas de Sorvete & Picolés">Fornecedores / Caixas de Sorvete & Picolés</option>
                                 <option value="Embalagens & Casquinhas">Embalagens & Casquinhas</option>
                                 <option value="Energia Elétrica (Freezers)">Energia Elétrica (Freezers)</option>
                                 <option value="Aluguel da Sorveteria">Aluguel da Sorveteria</option>
@@ -910,7 +909,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Nome do Produto / Sorvete *</label>
-                        <input type="text" id="prod-nome" class="form-control" required placeholder="Ex: Cascão Trufado 2 Bolas">
+                        <input type="text" id="prod-nome" class="form-control" required placeholder="Ex: Cascão Crocante 2 Bolas">
                     </div>
                     <div class="form-group">
                         <label>Categoria *</label>
@@ -919,7 +918,7 @@
                             <option value="Copo / Sundae">Copo / Sundae</option>
                             <option value="Taças Especiais">Taças Especiais</option>
                             <option value="Milkshake">Milkshake</option>
-                            <option value="Picolé Artesanal">Picolé Artesanal</option>
+                            <option value="Picolé">Picolé</option>
                             <option value="Pote / Viagem">Pote / Viagem</option>
                             <option value="Adicional / Calda">Adicional / Calda</option>
                         </select>
@@ -927,7 +926,7 @@
                 </div>
                 <div class="form-group">
                     <label>Sabores / Detalhes / Acompanhamentos</label>
-                    <input type="text" id="prod-detalhe" class="form-control" placeholder="Ex: Sabores Pistache, Ninho Trufado, Morango ou Chocolate Belga">
+                    <input type="text" id="prod-detalhe" class="form-control" placeholder="Ex: Sabores Morango, Chocolate, Flocos, Creme ou Napolitano">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -966,13 +965,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Nome do Insumo / Material *</label>
-                        <input type="text" id="est-item" class="form-control" required placeholder="Ex: Base Láctea 10L ou Casquinha Waffle">
+                        <input type="text" id="est-item" class="form-control" required placeholder="Ex: Caixa de Sorvete Napolitano 10L ou Casquinha">
                     </div>
                     <div class="form-group">
                         <label>Categoria *</label>
                         <select id="est-categoria" class="form-control">
-                            <option value="Bases & Laticínios">Bases & Laticínios</option>
-                            <option value="Polpas & Frutas">Polpas & Frutas</option>
+                            <option value="Massas & Caixas 10L">Massas & Caixas 10L</option>
                             <option value="Casquinhas & Biscoitos">Casquinhas & Biscoitos</option>
                             <option value="Embalagens & Copos">Embalagens & Copos</option>
                             <option value="Caldas & Confeitos">Caldas & Confeitos</option>
@@ -1044,7 +1042,7 @@
                     </div>
                     <div class="form-group">
                         <label>Sabor / Pedido Favorito</label>
-                        <input type="text" id="cli-sabor" class="form-control" placeholder="Ex: Cascão Duplo Pistache ou Sundae Especial">
+                        <input type="text" id="cli-sabor" class="form-control" placeholder="Ex: Cascão Flocos & Morango ou Sundae Tradicional">
                     </div>
                 </div>
                 <div class="form-row">
@@ -1216,6 +1214,6 @@
     </div>
 
     <div id="toast" class="toast"></div>
-    <script src="/static/js/app.js?v=1"></script>
+    <script src="/static/js/app.js?v=3"></script>
 </body>
 </html>

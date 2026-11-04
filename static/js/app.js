@@ -97,7 +97,7 @@ const App = {
         this.currentUser = user;
         sessionStorage.setItem("cone_magico_user", JSON.stringify(user));
         document.getElementById("login-screen").style.display = "none";
-        document.getElementById("app-main-layout").style.display = "grid";
+        document.getElementById("app-main-layout").style.display = "";
 
         this.renderUserSelect();
         this.applyRolePermissions();
@@ -407,7 +407,7 @@ const App = {
                 <div>
                     <div class="prod-cat">${p.categoria}</div>
                     <div class="prod-name">${p.nome}</div>
-                    <div class="prod-desc">${p.sabor_detalhe || "Sorvete artesanal Cone Mágico"}</div>
+                    <div class="prod-desc">${p.sabor_detalhe || "Sorveteria Cone Mágico"}</div>
                 </div>
                 <div class="prod-price-row">
                     <span class="prod-price">${this.formatBRL(p.preco)}</span>
@@ -632,7 +632,7 @@ const App = {
                     <div class="center">
                         <img src="/static/img/logo.svg" style="width:60px; height:60px;"><br>
                         <strong style="font-size:17px;">SORVETERIA CONE MÁGICO</strong><br>
-                        <small>Sorvetes Artesanais, Casquinhas & Taças</small><br>
+                        <small>Sorvetes, Casquinhas, Taças, Milkshakes & Picolés</small><br>
                         <small>CUPOM DE PEDIDO: <strong>#${v.codigo_pedido}</strong></small>
                     </div>
                     <div class="divider"></div>
@@ -974,7 +974,7 @@ const App = {
 
         if (item) {
             document.getElementById("est-item").value = item.item || "";
-            document.getElementById("est-categoria").value = item.categoria || "Bases & Laticínios";
+            document.getElementById("est-categoria").value = item.categoria || "Massas & Caixas 10L";
             document.getElementById("est-unidade").value = item.unidade || "un";
             document.getElementById("est-atual").value = item.quantidade_atual ?? 0;
             document.getElementById("est-minimo").value = item.quantidade_minima ?? 5;
@@ -1491,7 +1491,7 @@ const App = {
                         <img src="/static/img/logo.svg" style="width:72px; height:72px;">
                         <div>
                             <h2 style="color:#db2777; margin:0;">Cone Mágico — Relatório & Dashboard Financeiro</h2>
-                            <small style="color:#64748b;">Sorveteria & Gelateria Artesanal • ${periodoTexto}</small>
+                            <small style="color:#64748b;">Sorveteria Cone Mágico • ${periodoTexto}</small>
                         </div>
                     </div>
                 </div>
@@ -1748,7 +1748,7 @@ const App = {
                         <img src="/static/img/logo.svg" style="width:70px; height:70px;">
                         <div>
                             <h2 style="color:#7c3aed; margin:0;">Cone Mágico — Relatório de Fluxo de Caixa & Balancete Simples</h2>
-                            <small style="color:#64748b;">Sorveteria & Gelateria Artesanal • ${periodoTexto}</small>
+                            <small style="color:#64748b;">Sorveteria Cone Mágico • ${periodoTexto}</small>
                         </div>
                     </div>
                 </div>
@@ -1855,7 +1855,7 @@ const App = {
 
     _opcoesCatDespesa: `
         <optgroup label="Despesas Operacionais (Sorveteria Cone Mágico)">
-            <option value="Fornecedores / Laticínios & Polpas">Fornecedores / Laticínios & Polpas</option>
+            <option value="Fornecedores / Caixas de Sorvete & Picolés">Fornecedores / Caixas de Sorvete & Picolés</option>
             <option value="Embalagens & Casquinhas">Embalagens & Casquinhas</option>
             <option value="Energia Elétrica (Freezers)">Energia Elétrica (Freezers)</option>
             <option value="Aluguel da Sorveteria">Aluguel da Sorveteria</option>
@@ -1876,7 +1876,7 @@ const App = {
         document.getElementById("modal-financeiro-titulo").textContent =
             "🏢 Nova Despesa da Sorveteria (Cone Mágico)";
         document.getElementById("fin-tipo").value = "Despesa";
-        this.aoMudarTipoFinanceiro("Despesa", "Fornecedores / Laticínios & Polpas");
+        this.aoMudarTipoFinanceiro("Despesa", "Fornecedores / Caixas de Sorvete & Picolés");
         document.getElementById("fin-vencimento").value = new Date().toISOString().slice(0, 10);
         document.getElementById("fin-status").value = "Pendente";
         document.getElementById("modal-financeiro").classList.add("open");
@@ -1902,7 +1902,7 @@ const App = {
                 const opcoesValidas = Array.from(selectCat.options).map((o) => o.value);
                 selectCat.value = opcoesValidas.includes(valorAnterior)
                     ? valorAnterior
-                    : "Fornecedores / Laticínios & Polpas";
+                    : "Fornecedores / Caixas de Sorvete & Picolés";
             }
         } else {
             if (selectCat) {
@@ -2028,7 +2028,7 @@ const App = {
                             <img src="/static/img/logo.svg" alt="Cone Mágico">
                             <div>
                                 <h2 style="margin:0; color:#db2777;">CONE MÁGICO • RECIBO Nº ${String(item.id).padStart(4, "0")}</h2>
-                                <small>Sorveteria & Gelateria Artesanal</small>
+                                <small>Sorveteria Cone Mágico</small>
                             </div>
                         </div>
                         <div class="valor-box">${this.formatBRL(item.valor)}</div>

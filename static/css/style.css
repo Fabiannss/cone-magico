@@ -20,18 +20,22 @@
     padding: 0;
 }
 
-body {
+html, body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg);
     color: var(--text);
     line-height: 1.5;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 /* Layout Principal */
 .app-layout {
     display: grid;
-    grid-template-columns: 275px 1fr;
+    grid-template-columns: 275px minmax(0, 1fr);
     min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
 }
 
 .sidebar {
@@ -142,6 +146,15 @@ body {
     padding: 2rem 2.4rem;
     max-width: 1440px;
     width: 100%;
+    min-width: 0;
+}
+
+.view-section,
+.card,
+.grid-2 > *,
+.pdv-layout > * {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .page-header {
@@ -846,12 +859,12 @@ textarea.form-control {
 /* Responsividade */
 @media (max-width: 1180px) {
     .main-content {
-        padding: 1.5rem;
+        padding: 1.4rem;
     }
     .grid-2,
     .grid-2-equal,
     .pdv-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
     .pdv-cart-box {
         position: static;
@@ -860,12 +873,16 @@ textarea.form-control {
 
 @media (max-width: 960px) {
     .app-layout {
-        grid-template-columns: 1fr;
-        display: flex;
-        flex-direction: column;
+        display: flex !important;
+        flex-direction: column !important;
+        grid-template-columns: 1fr !important;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
     }
     .mobile-topbar {
-        display: flex;
+        display: flex !important;
+        width: 100%;
     }
     .sidebar {
         position: fixed;
@@ -893,22 +910,162 @@ textarea.form-control {
         display: block;
     }
     .main-content {
-        padding: 1.2rem 1rem;
+        padding: 1.1rem 0.9rem;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        margin-bottom: 1.2rem;
+    }
+    .page-title h2 {
+        font-size: 1.25rem;
+        line-height: 1.3;
+    }
+    .page-title p {
+        font-size: 0.82rem;
+    }
+    .page-header > div:last-child {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .page-header .btn {
+        flex: 1 1 auto;
+        justify-content: center;
+        text-align: center;
     }
     .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.9rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+    .kpi-card {
+        padding: 1rem;
+    }
+    .kpi-card .kpi-value {
+        font-size: 1.35rem;
+    }
+    .card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+    }
+    .card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+    }
+    .card-header input.form-control {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+    }
+    .filter-bar .form-group,
+    .filter-bar .form-control,
+    .filter-bar .btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+    .pdv-cat-pills {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.35rem;
+        -webkit-overflow-scrolling: touch;
+    }
+    .pdv-cat-pill {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .table-wrap {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
     }
     table {
-        min-width: 620px;
+        min-width: 580px;
     }
 }
 
 @media (max-width: 640px) {
     .kpi-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .pdv-products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem;
+    }
+    .pdv-product-card {
+        padding: 0.75rem;
+    }
+    .pdv-product-card .prod-name {
+        font-size: 0.84rem;
+    }
+    .pdv-product-card .prod-desc {
+        font-size: 0.71rem;
+    }
+    .pdv-product-card .prod-price {
+        font-size: 0.95rem;
+    }
+    .pdv-cart-box {
+        padding: 1rem;
+    }
+    .pdv-total-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+    }
+    .form-row {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 0.65rem;
+    }
+    .login-screen {
+        padding: 0.85rem;
     }
     .login-card {
-        padding: 1.5rem 1.15rem;
+        padding: 1.35rem 1rem;
+        border-radius: 16px;
+    }
+    .login-quick-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+    .pie-chart-wrap {
+        flex-direction: column;
+        align-items: center;
+    }
+    .pie-legend {
+        width: 100%;
+        min-width: 0;
+    }
+    .modal-backdrop {
+        padding: 0.5rem;
+        align-items: flex-end;
+    }
+    .modal {
+        padding: 1.15rem;
+        max-height: 92vh;
+        border-radius: 14px;
+    }
+    .toast {
+        left: 0.85rem;
+        right: 0.85rem;
+        bottom: 0.85rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .pdv-products-grid {
+        grid-template-columns: minmax(0, 1fr);
     }
 }

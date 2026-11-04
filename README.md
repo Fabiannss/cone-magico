@@ -1,6 +1,6 @@
 # 🍦 CONE MÁGICO — Sistema de Gestão para Sorveteria & PDV
 
-Aplicação Web completa em **Python + SQLite** (zero dependências externas, compatível nativamente com **Vercel Serverless**), baseada na arquitetura do **Psiquê Gestão**, adaptada exclusivamente para a sorveteria artesanal **CONE MÁGICO**.
+Aplicação Web completa em **Python + SQLite** (zero dependências externas, compatível nativamente com **Vercel Serverless**), baseada na arquitetura do **Psiquê Gestão**, adaptada exclusivamente para a sorveteria **CONE MÁGICO**.
 
 ---
 
@@ -16,7 +16,7 @@ Aplicação Web completa em **Python + SQLite** (zero dependências externas, co
 ## ✨ Módulos Incluídos
 
 1. **🍦 PDV / Frente de Caixa Rápido**:
-   - Catálogo visual separado por categorias (*Casquinhas & Cascões, Copos & Sundaes, Taças Especiais, Milkshakes, Picolés Artesanais, Potes 1,5L, Adicionais & Caldas*).
+   - Catálogo visual separado por categorias (*Casquinhas & Cascões, Copos & Sundaes, Taças Especiais, Milkshakes, Picolés, Potes 2L, Adicionais & Caldas*).
    - Carrinho com cálculo automático, desconto, escolha de forma de pagamento (*PIX, Dinheiro, Cartão de Crédito/Débito, Resgate Fidelidade*) e impressão de **Cupom de Pedido**.
    - **💸 Sangria & Suprimento Rápido de Caixa**: O funcionário pode registrar pequenas despesas de balcão (ex: gelo, água, troco) que entram automaticamente no fluxo de caixa do Admin, sem que o funcionário visualize o lucro da loja.
 2. **🎁 Clientes & Programa Fidelidade (10 Selos = 1 Sorvete Grátis)**:

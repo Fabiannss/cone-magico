@@ -8,12 +8,12 @@ from datetime import datetime, timedelta
 
 def get_db_path():
     if os.environ.get("VERCEL"):
-        tmp_db = "/tmp/conemagico_sorvetes.db"
-        orig_db = os.path.join(os.path.dirname(os.path.abspath(__file__)), "conemagico_sorvetes.db")
+        tmp_db = "/tmp/conemagico_loja.db"
+        orig_db = os.path.join(os.path.dirname(os.path.abspath(__file__)), "conemagico_loja.db")
         if not os.path.exists(tmp_db) and os.path.exists(orig_db):
             shutil.copy2(orig_db, tmp_db)
         return tmp_db
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "conemagico_sorvetes.db")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "conemagico_loja.db")
 
 
 DB_PATH = get_db_path()
@@ -51,7 +51,7 @@ def init_db():
     )
     """)
 
-    # 2. Tabela de Cardápio / Produtos (Sorvetes, Casquinhas, Taças, Milkshakes, Picolés, Adicionais)
+    # 2. Tabela de Cardápio / Produtos (Sorvetes, Casquinhas, Taças, Milkshakes, Picolés, Potes, Adicionais)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS produtos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,11 +211,11 @@ def seed_initial_data(conn: sqlite3.Connection):
             1950.0,
         ),
         (
-            "Lucas Ferreira (Sorveteiro / Balcão)",
+            "Lucas Ferreira (Atendente / Balcão)",
             "lucas",
             hash_password("123456"),
             "funcionario",
-            "Atendente & Montagem de Taças",
+            "Atendente de Sorveteria",
             "Tarde / Noite (14h às 22h)",
             "(11) 97741-8520",
             1850.0,
@@ -229,23 +229,23 @@ def seed_initial_data(conn: sqlite3.Connection):
         usuarios,
     )
 
-    # 2. Cardápio de Produtos da Sorveteria CONE MÁGICO
+    # 2. Cardápio de Produtos da Sorveteria CONE MÁGICO (Sorveteria Tradicional)
     produtos = [
-        ("Casquinha Mágica (1 Bola)", "Casquinha / Cascão", "Morango, Chocolate Belga, Baunilha ou Flocos", 10.00, 3.20, 1, 1),
-        ("Cascão Duplo Artesanal (2 Bolas)", "Casquinha / Cascão", "Borda de Nutella + 2 sabores à escolha", 18.00, 5.80, 1, 1),
-        ("Cone Mágico Supremo (3 Bolas + Calda)", "Casquinha / Cascão", "Cascão de Waffle, Pistache, Ninho Trufado e Framboesa", 24.00, 7.90, 1, 1),
-        ("Copinho Cremoso (2 Bolas)", "Copo / Sundae", "Acompanha cobertura e farofa crocante", 15.00, 4.50, 1, 0),
-        ("Sundae Especial Cone Mágico", "Copo / Sundae", "2 Bolas, chantilly, calda quente de chocolate, castanhas e cereja", 22.00, 6.90, 1, 1),
-        ("Taça Ferrero & Ninho", "Copo / Sundae", "Sorvete de Ninho e Chocolate, creme de avelã, bombom e chantilly", 32.00, 10.50, 1, 1),
-        ("Taça Banana Split Mágica", "Taças Especiais", "3 bolas de sorvete artesanal, banana, chantilly, calda de chocolate e castanhas", 24.00, 7.50, 1, 1),
-        ("Taça Brownie & Gelato Belga", "Taças Especiais", "Brownie quentinho com 2 bolas de sorvete artesanal e calda de ganache", 26.00, 8.90, 1, 1),
-        ("Milkshake Ovomaltine Crocante 400ml", "Milkshake", "Sorvete artesanal de baunilha, flocos crocantes e chantilly", 21.00, 6.40, 1, 1),
-        ("Milkshake Morango Silvestre 400ml", "Milkshake", "Sorvete de morango com pedaços da fruta e calda artesanal", 20.00, 6.00, 1, 0),
-        ("Picolé Artesanal Pistache Premium", "Picolé Artesanal", "Cobertura de chocolate branco e pistache torrado", 14.00, 4.50, 1, 1),
-        ("Picolé Artesanal Ninho Trufado", "Picolé Artesanal", "Recheio cremoso de trufa de chocolate meio amargo", 12.00, 3.80, 1, 0),
-        ("Pote Família 1,5L (Leve p/ Casa)", "Pote / Viagem", "Até 3 sabores artesanais à escolha do cliente", 48.00, 16.00, 1, 1),
-        ("Adicional de Nutella / Creme de Avelã", "Adicional / Calda", "Porção extra generosa 40g", 6.00, 2.10, 1, 0),
-        ("Adicional Castanha / Confete / Chantilly", "Adicional / Calda", "Porção extra de topping", 4.00, 1.20, 1, 0),
+        ("Casquinha Simples (1 Bola)", "Casquinha / Cascão", "Sabores: Creme, Morango, Chocolate, Flocos ou Napolitano", 6.00, 1.80, 1, 1),
+        ("Casquinha Dupla (2 Bolas)", "Casquinha / Cascão", "2 bolas à escolha com cobertura de chocolate, morango ou caramelo", 10.00, 3.10, 1, 1),
+        ("Cascão Crocante (2 Bolas)", "Casquinha / Cascão", "Cascão recheado com calda + 2 bolas e granulado ou amendoim", 13.00, 4.20, 1, 1),
+        ("Cestinha Especial (3 Bolas)", "Casquinha / Cascão", "Cestinha crocante com 3 bolas, cobertura, canudinho wafer e granulado", 17.00, 5.50, 1, 1),
+        ("Copinho 200ml (2 Bolas)", "Copo / Sundae", "Sorvete de massa no copo com cobertura tradicional", 11.00, 3.40, 1, 0),
+        ("Sundae Tradicional Cone Mágico", "Copo / Sundae", "2 bolas de sorvete, calda de chocolate ou morango, chantilly, amendoim e cereja", 16.00, 5.10, 1, 1),
+        ("Taça Colegial", "Taças Especiais", "2 bolas de sorvete, cobertura de chocolate, chantilly, farofa doce e tubetes", 19.00, 6.20, 1, 1),
+        ("Taça Banana Split", "Taças Especiais", "3 bolas (Creme, Morango e Chocolate), banana, chantilly, coberturas e cereja", 24.00, 7.80, 1, 1),
+        ("Taça Cone Mágico Completa", "Taças Especiais", "3 bolas de sorvete, calda de chocolate, chantilly, jujuba, confete e biscoito", 25.00, 8.20, 1, 1),
+        ("Milkshake Tradicional 400ml", "Milkshake", "Sabores Chocolate, Morango, Flocos ou Ovomaltine com chantilly", 16.00, 5.20, 1, 1),
+        ("Milkshake Grande 500ml", "Milkshake", "Sabores Ovomaltine, Morango, Chocolate ou Leite Condensado", 19.00, 6.30, 1, 0),
+        ("Picolé de Fruta", "Picolé", "Sabores Uva, Limão, Maracujá, Abacaxi ou Morango", 4.00, 1.30, 1, 1),
+        ("Picolé Ao Leite / Cremoso", "Picolé", "Sabores Chocolate, Coco, Milho Verde, Leite Condensado ou Amendoim", 5.50, 1.90, 1, 1),
+        ("Pote de Sorvete 2 Litros (Viagem)", "Pote / Viagem", "Sabores Napolitano, Flocos, Creme, Morango ou Chocolate", 28.00, 10.50, 1, 1),
+        ("Adicional Cobertura / Confeitos", "Adicional / Calda", "Porção extra de cobertura, granulado, amendoim, confete ou chantilly", 3.00, 0.90, 1, 0),
     ]
     cursor.executemany(
         """
@@ -255,18 +255,18 @@ def seed_initial_data(conn: sqlite3.Connection):
         produtos,
     )
 
-    # 3. Estoque & Insumos (Com alguns itens em estoque baixo para demonstrar alerta)
+    # 3. Estoque & Insumos da Sorveteria
     itens_estoque = [
-        ("Base Láctea Artesanal Premium", "Bases & Laticínios", "L", 42.0, 20.0, 14.50, "Laticínios Serra Dourada"),
-        ("Pasta Italiana de Pistache Puro", "Bases & Laticínios", "kg", 2.5, 5.0, 145.00, "Importadora Gelato Brasil"),
-        ("Creme de Leite Fresco & Base Gelato (10L)", "Bases & Laticínios", "cx", 6.0, 3.0, 135.00, "Laticínios Serra Dourada"),
-        ("Morango Fresco Selecionado", "Polpas & Frutas", "kg", 3.0, 8.0, 22.00, "Horta & Fruta Express"),
-        ("Casquinha e Cascão de Waffle Artesanal", "Casquinhas & Biscoitos", "un", 45.0, 80.0, 0.85, "Fábrica Crocante Cones"),
-        ("Copos Biodegradáveis 300ml/500ml (Pct 100)", "Embalagens & Copos", "pct", 9.0, 4.0, 24.00, "EcoPack Embalagens"),
-        ("Potes Térmicos 1,5L Personalizados", "Embalagens & Copos", "un", 28.0, 15.0, 3.40, "EcoPack Embalagens"),
-        ("Balde de Nutella / Creme de Avelã 3kg", "Caldas & Confeitos", "un", 1.0, 3.0, 165.00, "Distribuidora Doce Mais"),
-        ("Leite em Pó Ninho Integral (Pacote 800g)", "Caldas & Confeitos", "pct", 11.0, 5.0, 34.90, "Atacadão Alimentos"),
-        ("Picolés Artesanais Prontos (Grade Sortida)", "Picolés Prontos", "un", 95.0, 40.0, 3.90, "Produção Própria Cone Mágico"),
+        ("Caixa de Sorvete Napolitano / Flocos (10L)", "Massas & Caixas 10L", "cx", 8.0, 4.0, 78.00, "Distribuidora Gelados & Cia"),
+        ("Caixa de Sorvete Morango / Chocolate (10L)", "Massas & Caixas 10L", "cx", 2.0, 4.0, 78.00, "Distribuidora Gelados & Cia"),
+        ("Caixa de Sorvete Creme / Leite Condensado (10L)", "Massas & Caixas 10L", "cx", 6.0, 3.0, 78.00, "Distribuidora Gelados & Cia"),
+        ("Casquinha de Biscoito Tradicional", "Casquinhas & Biscoitos", "un", 45.0, 80.0, 0.45, "Fábrica Crocante Cones"),
+        ("Cascão e Cestinha Crocante", "Casquinhas & Biscoitos", "un", 65.0, 40.0, 0.85, "Fábrica Crocante Cones"),
+        ("Copos Descartáveis e Pazinhas (Pct 100)", "Embalagens & Copos", "pct", 9.0, 4.0, 18.00, "Atacadão Embalagens"),
+        ("Potes de Sorvete 2 Litros (Viagem)", "Embalagens & Copos", "un", 28.0, 15.0, 18.50, "Distribuidora Gelados & Cia"),
+        ("Coberturas (Chocolate, Morango e Caramelo)", "Caldas & Confeitos", "un", 2.0, 5.0, 16.90, "Distribuidora Doce Mais"),
+        ("Granulado, Amendoim, Confete e Canudinhos", "Caldas & Confeitos", "kg", 6.0, 3.0, 24.90, "Atacadão Alimentos"),
+        ("Picolés de Fruta e Ao Leite (Grade Sortida)", "Picolés Prontos", "un", 110.0, 50.0, 1.60, "Distribuidora Gelados & Cia"),
     ]
     cursor.executemany(
         """
@@ -278,10 +278,10 @@ def seed_initial_data(conn: sqlite3.Connection):
 
     # 4. Clientes & Programa Fidelidade
     clientes = [
-        ("Mariana Costa Silva", "345.678.901-12", "(11) 98765-4321", "Cascão Duplo (Pistache & Ninho)", 9, 1, 246.00, "VIP", "Falta apenas 1 sorvete para ganhar o 2º prêmio fidelidade!"),
-        ("Pedro Henrique Almeida", "412.890.123-45", "(11) 97654-3210", "Taça Brownie & Gelato Belga", 10, 2, 390.00, "VIP", "Tem 1 prêmio disponível para resgate imediato!"),
-        ("Beatriz Ferreira Lima", "289.456.123-88", "(11) 96543-2109", "Milkshake Ovomaltine", 5, 0, 125.00, "Ativo", "Cliente frequente aos finais de semana."),
-        ("Família Oliveira (Roberto)", "198.234.567-00", "(11) 95432-1098", "Pote Família 1,5L", 8, 1, 340.00, "VIP", "Costuma levar Pote Família aos domingos."),
+        ("Mariana Costa Silva", "345.678.901-12", "(11) 98765-4321", "Cascão Crocante (Flocos & Morango)", 9, 1, 186.00, "VIP", "Falta apenas 1 sorvete para ganhar o 2º prêmio fidelidade!"),
+        ("Pedro Henrique Almeida", "412.890.123-45", "(11) 97654-3210", "Taça Banana Split", 10, 2, 290.00, "VIP", "Tem 1 prêmio disponível para resgate imediato!"),
+        ("Beatriz Ferreira Lima", "289.456.123-88", "(11) 96543-2109", "Milkshake Tradicional 400ml", 5, 0, 95.00, "Ativo", "Cliente frequente aos finais de semana."),
+        ("Família Oliveira (Roberto)", "198.234.567-00", "(11) 95432-1098", "Pote de Sorvete 2 Litros", 8, 1, 240.00, "VIP", "Costuma levar Pote 2L aos domingos."),
     ]
     cursor.executemany(
         """
@@ -299,19 +299,19 @@ def seed_initial_data(conn: sqlite3.Connection):
             2,
             hoje,
             "13:15",
-            "2x Cascão Duplo Artesanal (2 Bolas), 1x Adicional de Nutella",
+            "2x Cascão Crocante (2 Bolas), 1x Adicional Cobertura / Confeitos",
             json.dumps([
-                {"produto_id": 2, "nome": "Cascão Duplo Artesanal (2 Bolas)", "qtd": 2, "preco": 18.00, "subtotal": 36.00},
-                {"produto_id": 14, "nome": "Adicional de Nutella / Creme de Avelã", "qtd": 1, "preco": 6.00, "subtotal": 6.00},
+                {"produto_id": 3, "nome": "Cascão Crocante (2 Bolas)", "qtd": 2, "preco": 13.00, "subtotal": 26.00},
+                {"produto_id": 15, "nome": "Adicional Cobertura / Confeitos", "qtd": 1, "preco": 3.00, "subtotal": 3.00},
             ], ensure_ascii=False),
             2,
-            42.00,
+            29.00,
             0.00,
-            42.00,
+            29.00,
             "PIX",
             "Balcão",
             "Concluída",
-            "Borda caprichada de Nutella",
+            "Cobertura de chocolate e granulado",
         ),
         (
             "CM-1002",
@@ -319,15 +319,15 @@ def seed_initial_data(conn: sqlite3.Connection):
             2,
             hoje,
             "14:10",
-            "1x Taça Brownie & Gelato Belga, 1x Picolé Artesanal Pistache Premium",
+            "1x Taça Banana Split, 2x Picolé Ao Leite / Cremoso",
             json.dumps([
-                {"produto_id": 8, "nome": "Taça Brownie & Gelato Belga", "qtd": 1, "preco": 26.00, "subtotal": 26.00},
-                {"produto_id": 11, "nome": "Picolé Artesanal Pistache Premium", "qtd": 1, "preco": 14.00, "subtotal": 14.00},
+                {"produto_id": 8, "nome": "Taça Banana Split", "qtd": 1, "preco": 24.00, "subtotal": 24.00},
+                {"produto_id": 13, "nome": "Picolé Ao Leite / Cremoso", "qtd": 2, "preco": 5.50, "subtotal": 11.00},
             ], ensure_ascii=False),
-            2,
-            40.00,
+            3,
+            35.00,
             0.00,
-            40.00,
+            35.00,
             "Cartão de Crédito",
             "Mesa",
             "Concluída",
@@ -339,15 +339,15 @@ def seed_initial_data(conn: sqlite3.Connection):
             3,
             hoje,
             "14:35",
-            "1x Taça Ferrero & Ninho, 1x Milkshake Ovomaltine Crocante 400ml",
+            "1x Sundae Tradicional Cone Mágico, 1x Milkshake Tradicional 400ml",
             json.dumps([
-                {"produto_id": 6, "nome": "Taça Ferrero & Ninho", "qtd": 1, "preco": 32.00, "subtotal": 32.00},
-                {"produto_id": 9, "nome": "Milkshake Ovomaltine Crocante 400ml", "qtd": 1, "preco": 21.00, "subtotal": 21.00},
+                {"produto_id": 6, "nome": "Sundae Tradicional Cone Mágico", "qtd": 1, "preco": 16.00, "subtotal": 16.00},
+                {"produto_id": 10, "nome": "Milkshake Tradicional 400ml", "qtd": 1, "preco": 16.00, "subtotal": 16.00},
             ], ensure_ascii=False),
             2,
-            53.00,
+            32.00,
             0.00,
-            53.00,
+            32.00,
             "PIX",
             "Balcão",
             "Concluída",
@@ -359,19 +359,19 @@ def seed_initial_data(conn: sqlite3.Connection):
             2,
             ontem,
             "17:20",
-            "2x Pote Família 1,5L (Leve p/ Casa), 2x Cone Mágico Supremo",
+            "2x Pote de Sorvete 2 Litros (Viagem), 2x Cestinha Especial (3 Bolas)",
             json.dumps([
-                {"produto_id": 13, "nome": "Pote Família 1,5L (Leve p/ Casa)", "qtd": 2, "preco": 48.00, "subtotal": 96.00},
-                {"produto_id": 3, "nome": "Cone Mágico Supremo (3 Bolas + Calda)", "qtd": 2, "preco": 24.00, "subtotal": 48.00},
+                {"produto_id": 14, "nome": "Pote de Sorvete 2 Litros (Viagem)", "qtd": 2, "preco": 28.00, "subtotal": 56.00},
+                {"produto_id": 4, "nome": "Cestinha Especial (3 Bolas)", "qtd": 2, "preco": 17.00, "subtotal": 34.00},
             ], ensure_ascii=False),
             4,
-            144.00,
-            4.00,
-            140.00,
+            90.00,
+            0.00,
+            90.00,
             "Cartão de Débito",
             "Viagem / Retirada",
             "Concluída",
-            "Embalagem térmica para viagem",
+            "Sabores Napolitano e Flocos",
         ),
     ]
     cursor.executemany(
@@ -387,16 +387,16 @@ def seed_initial_data(conn: sqlite3.Connection):
 
     # 6. Lançamentos Financeiros (Receitas do PDV, Sangrias Rápidas do Caixa e Despesas da Sorveteria)
     lancamentos = [
-        ("Receita", "Venda PDV", "Pedido #CM-1001 — 2x Cascão Duplo + Adicional Nutella", 1, 2, 1, 42.00, hoje, hoje, "Pago", "PIX", "PDV", "Venda balcão"),
-        ("Receita", "Venda PDV", "Pedido #CM-1002 — Taça Brownie & Gelato + Picolé Pistache", 2, 2, 2, 40.00, hoje, hoje, "Pago", "Cartão de Crédito", "PDV", "Mesa 04"),
-        ("Receita", "Venda PDV", "Pedido #CM-1003 — Taça Ferrero & Ninho + Milkshake", 3, 3, 3, 53.00, hoje, hoje, "Pago", "PIX", "PDV", "Venda balcão"),
-        ("Receita", "Venda PDV", "Pedido #CM-1004 — 2x Pote Família 1,5L + 2x Cone Supremo", 4, 2, 4, 140.00, ontem, ontem, "Pago", "Cartão de Débito", "PDV", "Viagem"),
-        ("Receita", "Encomenda / Evento", "Combo Festa 60 Picolés Artesanais Sortidos — Aniversário Infantil", 1, 1, None, 620.00, dois_dias, dois_dias, "Pago", "PIX", "Admin", "Sinal + Quitação na entrega"),
-        ("Receita", "Encomenda / Evento", "Reserva 3 Potes Família 1,5L p/ Fim de Semana", 4, 2, None, 144.00, hoje, None, "Pendente", "PIX", "PDV", "Cliente pagará na retirada às 18h"),
-        ("Despesa", "Sangria / Despesa Rápida de Caixa", "Compra emergencial de gelo filtrado e guardanapos p/ balcão", None, 2, None, 38.00, hoje, hoje, "Pago", "Dinheiro", "Caixa Rápido", "Lançado pela funcionária Camila no caixa"),
-        ("Despesa", "Fornecedores / Laticínios & Polpas", "Reposição de Base Láctea, Creme de Leite e Pasta de Pistache", None, 1, None, 485.00, cinco_dias, cinco_dias, "Pago", "PIX", "Admin", "Laticínios Serra Dourada"),
-        ("Despesa", "Energia Elétrica (Freezers)", "Conta de Energia Elétrica Comercial (Refrigeração / Ilha de Freezers)", None, 1, None, 640.00, ontem, ontem, "Pago", "Transferência", "Admin", "Fatura mensal"),
-        ("Despesa", "Embalagens & Casquinhas", "Pedido de Copos Biodegradáveis, Colheres e Casquinhas de Waffle", None, 1, None, 290.00, venc_futuro, None, "Pendente", "Boleto / PIX", "Admin", "Boleto fornecedor EcoPack"),
+        ("Receita", "Venda PDV", "Pedido #CM-1001 — 2x Cascão Crocante + Adicional Cobertura", 1, 2, 1, 29.00, hoje, hoje, "Pago", "PIX", "PDV", "Venda balcão"),
+        ("Receita", "Venda PDV", "Pedido #CM-1002 — Taça Banana Split + 2x Picolé Ao Leite", 2, 2, 2, 35.00, hoje, hoje, "Pago", "Cartão de Crédito", "PDV", "Mesa 04"),
+        ("Receita", "Venda PDV", "Pedido #CM-1003 — Sundae Tradicional + Milkshake 400ml", 3, 3, 3, 32.00, hoje, hoje, "Pago", "PIX", "PDV", "Venda balcão"),
+        ("Receita", "Venda PDV", "Pedido #CM-1004 — 2x Pote 2 Litros + 2x Cestinha Especial", 4, 2, 4, 90.00, ontem, ontem, "Pago", "Cartão de Débito", "PDV", "Viagem"),
+        ("Receita", "Encomenda / Evento", "Encomenda 100 Picolés Sortidos (Fruta e Ao Leite) — Festa Infantil", 1, 1, None, 420.00, dois_dias, dois_dias, "Pago", "PIX", "Admin", "Sinal + Quitação na entrega"),
+        ("Receita", "Encomenda / Evento", "Reserva 4 Potes de Sorvete 2 Litros p/ Fim de Semana", 4, 2, None, 112.00, hoje, None, "Pendente", "PIX", "PDV", "Cliente pagará na retirada às 18h"),
+        ("Despesa", "Sangria / Despesa Rápida de Caixa", "Compra emergencial de gelo e guardanapos p/ balcão", None, 2, None, 38.00, hoje, hoje, "Pago", "Dinheiro", "Caixa Rápido", "Lançado pela funcionária Camila no caixa"),
+        ("Despesa", "Fornecedores / Caixas de Sorvete & Picolés", "Reposição de Caixas 10L (Napolitano, Flocos, Morango e Chocolate)", None, 1, None, 468.00, cinco_dias, cinco_dias, "Pago", "PIX", "Admin", "Distribuidora Gelados & Cia"),
+        ("Despesa", "Energia Elétrica (Freezers)", "Conta de Energia Elétrica Comercial (Freezers e Conservadoras)", None, 1, None, 640.00, ontem, ontem, "Pago", "Transferência", "Admin", "Fatura mensal"),
+        ("Despesa", "Embalagens & Casquinhas", "Pedido de Copos Descartáveis, Pazinhas, Casquinhas e Cascões", None, 1, None, 260.00, venc_futuro, None, "Pendente", "Boleto / PIX", "Admin", "Boleto fornecedor"),
         ("Despesa", "Aluguel da Sorveteria", "Locação do Ponto Comercial — Sorveteria Cone Mágico", None, 1, None, 1800.00, venc_futuro, None, "Pendente", "Transferência", "Admin", "Vencimento dia 10"),
     ]
     cursor.executemany(
