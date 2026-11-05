@@ -3,7 +3,181 @@ import hashlib
 import json
 import os
 import shutil
+import urllib.request
+import urllib.error
 from datetime import datetime, timedelta
+
+_DB_INITIALIZED = False
+
+
+def get_turso_config():
+    url = (
+        os.environ.get("TURSO_DATABASE_URL")
+        or os.environ.get("DATABASE_URL")
+        or os.environ.get("LIBSQL_URL")
+        or ""
+    ).strip()
+    token = (
+        os.environ.get("TURSO_AUTH_TOKEN")
+        or os.environ.get("DATABASE_AUTH_TOKEN")
+        or os.environ.get("LIBSQL_AUTH_TOKEN")
+        or ""
+    ).strip()
+    if not url or not token:
+        return None, None
+    if url.startswith("libsql://"):
+        url = "https://" + url[len("libsql://") :]
+    elif url.startswith("wss://"):
+        url = "https://" + url[len("wss://") :]
+    elif url.startswith("http://"):
+        url = "https://" + url[len("http://") :]
+    url = url.rstrip("/")
+    return url, token
+
+
+def _format_turso_arg(val):
+    if val is None:
+        return {"type": "null"}
+    if isinstance(val, bool):
+        return {"type": "integer", "value": "1" if val else "0"}
+    if isinstance(val, int):
+        return {"type": "integer", "value": str(val)}
+    if isinstance(val, float):
+        return {"type": "float", "value": float(val)}
+    return {"type": "text", "value": str(val)}
+
+
+def _parse_turso_cell(cell):
+    if not isinstance(cell, dict):
+        return cell
+    ctype = cell.get("type")
+    val = cell.get("value")
+    if ctype == "null" or val is None:
+        return None
+    if ctype == "integer":
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return val
+    if ctype == "float":
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return val
+    return str(val)
+
+
+class TursoCursor:
+    def __init__(self, conn: "TursoConnection"):
+        self.conn = conn
+        self._rows = []
+        self._idx = 0
+        self.lastrowid = None
+        self.rowcount = 0
+
+    def execute(self, sql: str, params=()):
+        stmt = {"sql": sql}
+        if params:
+            stmt["args"] = [_format_turso_arg(p) for p in params]
+        res = self.conn._pipeline([{"type": "execute", "stmt": stmt}])
+        if res:
+            self._load_result(res[0])
+        return self
+
+    def executemany(self, sql: str, seq_of_params):
+        requests = []
+        for params in seq_of_params:
+            stmt = {"sql": sql, "args": [_format_turso_arg(p) for p in params]}
+            requests.append({"type": "execute", "stmt": stmt})
+        if not requests:
+            return self
+        results = self.conn._pipeline(requests)
+        if results:
+            self._load_result(results[-1])
+        return self
+
+    def _load_result(self, result_obj: dict):
+        cols = [c.get("name", f"col_{i}") for i, c in enumerate(result_obj.get("cols") or [])]
+        raw_rows = result_obj.get("rows") or []
+        parsed = []
+        for r in raw_rows:
+            row_dict = {}
+            for i, col_name in enumerate(cols):
+                row_dict[col_name] = _parse_turso_cell(r[i]) if i < len(r) else None
+            parsed.append(row_dict)
+        self._rows = parsed
+        self._idx = 0
+        lid = result_obj.get("last_insert_rowid")
+        if lid is not None:
+            try:
+                self.lastrowid = int(lid)
+            except (ValueError, TypeError):
+                self.lastrowid = lid
+        self.rowcount = result_obj.get("affected_row_count", len(parsed))
+
+    def fetchone(self):
+        if self._idx < len(self._rows):
+            row = self._rows[self._idx]
+            self._idx += 1
+            return row
+        return None
+
+    def fetchall(self):
+        rem = self._rows[self._idx :]
+        self._idx = len(self._rows)
+        return rem
+
+
+class TursoConnection:
+    def __init__(self, base_url: str, auth_token: str):
+        self.endpoint = f"{base_url}/v2/pipeline"
+        self.auth_token = auth_token
+
+    def _pipeline(self, exec_requests: list):
+        payload = {"requests": exec_requests + [{"type": "close"}]}
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            self.endpoint,
+            data=data,
+            headers={
+                "Authorization": f"Bearer {self.auth_token}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Erro HTTP Turso ({e.code}): {err_body}") from e
+
+        results = []
+        for item in body.get("results", []):
+            if item.get("type") == "error":
+                err = item.get("error", {})
+                raise RuntimeError(f"Erro SQL Turso: {err.get('message', err)}")
+            resp_obj = item.get("response", {})
+            if resp_obj.get("type") == "execute":
+                results.append(resp_obj.get("result", {}))
+        return results
+
+    def cursor(self):
+        return TursoCursor(self)
+
+    def execute(self, sql: str, params=()):
+        cur = TursoCursor(self)
+        return cur.execute(sql, params)
+
+    def executemany(self, sql: str, seq_of_params):
+        cur = TursoCursor(self)
+        return cur.executemany(sql, seq_of_params)
+
+    def commit(self):
+        pass
+
+    def close(self):
+        pass
 
 
 def get_db_path():
@@ -19,7 +193,15 @@ def get_db_path():
 DB_PATH = get_db_path()
 
 
+def is_turso_enabled() -> bool:
+    url, token = get_turso_config()
+    return bool(url and token)
+
+
 def get_connection():
+    turso_url, turso_token = get_turso_config()
+    if turso_url and turso_token:
+        return TursoConnection(turso_url, turso_token)
     conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -31,6 +213,10 @@ def hash_password(password: str) -> str:
 
 
 def init_db():
+    global _DB_INITIALIZED
+    if _DB_INITIALIZED:
+        return
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -151,9 +337,10 @@ def init_db():
     seed_initial_data(conn)
     ensure_default_users(conn)
     conn.close()
+    _DB_INITIALIZED = True
 
 
-def ensure_default_users(conn: sqlite3.Connection):
+def ensure_default_users(conn):
     cursor = conn.cursor()
     adm = cursor.execute("SELECT id FROM usuarios WHERE perfil = 'admin' AND ativo = 1").fetchone()
     if not adm:
@@ -176,10 +363,10 @@ def ensure_default_users(conn: sqlite3.Connection):
     conn.commit()
 
 
-def seed_initial_data(conn: sqlite3.Connection):
+def seed_initial_data(conn):
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios")
-    if cursor.fetchone()["total"] > 0:
+    row_count = cursor.execute("SELECT COUNT(*) as total FROM usuarios").fetchone()
+    if row_count and row_count["total"] > 0:
         return
 
     hoje = datetime.now().strftime("%Y-%m-%d")

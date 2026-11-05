@@ -6,7 +6,7 @@ from datetime import datetime
 from urllib.parse import parse_qs
 from wsgiref.simple_server import make_server
 
-from database import ensure_default_users, get_connection, hash_password, init_db
+from database import ensure_default_users, get_connection, hash_password, init_db, is_turso_enabled
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -1029,6 +1029,15 @@ def handle_delete_financeiro(fin_id: int):
 # ==========================================
 
 def dispatch_api(method: str, path: str, query: dict, body: dict, headers: dict):
+    init_db()
+    if path == "/api/status" and method == "GET":
+        return {
+            "status": "ok",
+            "sistema": "Cone Mágico — Sorveteria & PDV",
+            "banco_dados": "Turso Cloud (libSQL)" if is_turso_enabled() else "SQLite Local",
+            "turso_ativo": is_turso_enabled(),
+        }
+
     if path == "/api/login" and method == "POST":
         return handle_login(body)
 
