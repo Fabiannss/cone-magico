@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cardápio Digital & Delivery | Sorveteria Cone Mágico</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=4">
+    <style>
+        :root {
+            --primary: #db2777;
+            --primary-dark: #be185d;
+            --primary-light: #fdf2f8;
+            --secondary: #7c3aed;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding-bottom: 100px;
+            overflow-x: hidden;
+        }
+        .hero-header {
+            background: linear-gradient(135deg, #831843 0%, #4c1d95 100%);
+            color: #fff;
+            padding: 1.35rem 1rem 1.65rem;
+            text-align: center;
+            position: relative;
+        }
+        .hero-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.55rem;
+        }
+        .hero-logo {
+            width: 78px;
+            height: 78px;
+            border-radius: 20px;
+            background: #fff;
+            padding: 5px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        }
+        .hero-title {
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .hero-sub {
+            font-size: 0.85rem;
+            color: #fbcfe8;
+        }
+        .status-pills {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 0.25rem;
+        }
+        .status-pill {
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.22);
+            padding: 0.28rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 0 0.95rem;
+        }
+        .loyalty-banner {
+            background: linear-gradient(135deg, #fdf2f8 0%, #f5f3ff 100%);
+            border: 1px solid #f9a8d4;
+            border-radius: 14px;
+            padding: 0.85rem 1rem;
+            margin-top: -0.9rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            box-shadow: 0 4px 12px rgba(219, 39, 119, 0.08);
+            position: relative;
+            z-index: 5;
+        }
+        .loyalty-banner strong {
+            color: #9d174d;
+            font-size: 0.85rem;
+            display: block;
+        }
+        .loyalty-banner span {
+            color: #64748b;
+            font-size: 0.76rem;
+        }
+        .btn-track-top {
+            background: #fff;
+            border: 1px solid #f472b6;
+            color: var(--primary);
+            padding: 0.45rem 0.75rem;
+            border-radius: 10px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .search-box {
+            margin-bottom: 0.85rem;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.72rem 0.95rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            font-size: 0.92rem;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .cat-bar {
+            display: flex;
+            gap: 0.45rem;
+            overflow-x: auto;
+            padding: 0.25rem 0 0.75rem;
+            -webkit-overflow-scrolling: touch;
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 10;
+        }
+        .cat-pill {
+            padding: 0.48rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: #334155;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .cat-pill.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+        .prod-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+        @media (max-width: 560px) {
+            .prod-list {
+                grid-template-columns: 1fr;
+            }
+            .loyalty-banner {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+        }
+        .prod-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 0.65rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .prod-cat {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--secondary);
+            font-weight: 700;
+        }
+        .prod-title {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0.15rem 0;
+        }
+        .prod-desc {
+            font-size: 0.79rem;
+            color: var(--muted);
+            line-height: 1.35;
+        }
+        .prod-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 0.55rem;
+            border-top: 1px dashed #e2e8f0;
+        }
+        .prod-price {
+            font-size: 1.08rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .btn-add {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 9px;
+            padding: 0.48rem 0.9rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-add:active {
+            transform: scale(0.97);
+        }
+        /* Barra Fixa da Sacola no Rodapé */
+        .cart-bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 2px solid #fbcfe8;
+            padding: 0.75rem 1rem;
+            box-shadow: 0 -8px 25px rgba(15, 23, 42, 0.12);
+            z-index: 50;
+            display: none;
+        }
+        .cart-bottom-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .btn-checkout {
+            background: linear-gradient(135deg, #db2777, #9333ea);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.78rem 1.3rem;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3);
+        }
+        /* Modal de Checkout & Acompanhamento */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal-backdrop.open {
+            display: flex;
+        }
+        .modal-sheet {
+            background: #fff;
+            width: 100%;
+            max-width: 640px;
+            max-height: 92vh;
+            border-radius: 20px 20px 0 0;
+            padding: 1.35rem 1.15rem 1.65rem;
+            overflow-y: auto;
+        }
+        @media (min-width: 641px) {
+            .modal-backdrop { align-items: center; padding: 1rem; }
+            .modal-sheet { border-radius: 18px; }
+        }
+        .form-group {
+            margin-bottom: 0.85rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 0.3rem;
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.65rem 0.8rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 0.92rem;
+            font-family: inherit;
+        }
+        .mode-switch {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.55rem;
+            margin-bottom: 1rem;
+        }
+        .mode-btn {
+            padding: 0.7rem 0.5rem;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: #f8fafc;
+            font-weight: 700;
+            font-size: 0.82rem;
+            cursor: pointer;
+            text-align: center;
+        }
+        .mode-btn.active {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary-dark);
+        }
+        .cart-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.55rem 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.88rem;
+        }
+        .qty-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .step-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .step-badge.done {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #15803d;
+            font-weight: 700;
+        }
+        .step-badge.current {
+            background: #fdf2f8;
+            border-color: #f472b6;
+            color: #be185d;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <header class="hero-header">
+        <div class="hero-inner">
+            <img src="/static/img/logo.svg?v=4" alt="Cone Mágico" class="hero-logo">
+            <h1 class="hero-title">SORVETERIA CONE MÁGICO</h1>
+            <p class="hero-sub">Cardápio Digital & Delivery Próprio • Peça pelo celular!</p>
+            <div class="status-pills">
+                <span class="status-pill">🟢 Aberto Agora</span>
+                <span class="status-pill" id="lbl-tempo-entrega">🛵 Entrega: 25 a 40 min (99Entrega / Motoboy)</span>
+                <span class="status-pill">🏪 Retirada Grátis no Balcão</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="loyalty-banner">
+            <div>
+                <strong>🎁 Programa Fidelidade Cone Mágico (10 Selos = 1 Sorvete Grátis)</strong>
+                <span>Informe seu WhatsApp ao finalizar o pedido para acumular selos automaticamente!</span>
+            </div>
+            <button type="button" class="btn-track-top" onclick="PedidoApp.abrirModalRastreio()">
+                🔍 Acompanhar Pedido
+            </button>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="busca-input" class="search-input" placeholder="🔍 Buscar sorvete, casquinha, sundae, milkshake, picolé..." oninput="PedidoApp.renderProdutos()">
+        </div>
+
+        <div class="cat-bar" id="cat-bar">
+            <button class="cat-pill active" onclick="PedidoApp.setCategoria('', this)">Todos</button>
+            <button class="cat-pill" onclick="PedidoApp.setCategoria('Casquinha / Cascão', this)">🍦 Casquinhas & Cascões</button>
+            <button class="cat-pill" onclick="PedidoApp.setCategoria('Copo / Sundae', this)">🍨 Copos & Sundaes</button>
+            <button class="cat-pill" onclick="PedidoApp.setCategoria('Taças Especiais', this)">🍧 Taças Especiais</button>
+            <button class="cat-pill" onclick="PedidoApp.setCategoria('Milkshake', this)">🥤 Milkshakes</button>
+            <button class="cat-pill" onclick="PedidoApp.setCategoria('Picolé', this)">🍡 Picolés</button>
+            <button class="cat-pill" onclick="PedidoApp.setCategoria('Pote / Viagem', this)">🥡 Potes 2L</button>
+            <button class="cat-pill" onclick="PedidoApp.setCategoria('Adicional / Calda', this)">🍫 Adicionais</button>
+        </div>
+
+        <div id="produtos-grid" class="prod-list"></div>
+    </main>
+
+    <!-- BARRA FIXA DO CARRINHO -->
+    <div class="cart-bottom-bar" id="cart-bottom-bar">
+        <div class="cart-bottom-inner">
+            <div>
+                <span style="font-size:0.75rem; color:#64748b; font-weight:700; text-transform:uppercase;" id="cart-bar-qtd">0 itens na sacola</span>
+                <strong style="display:block; font-size:1.2rem; color:#db2777;" id="cart-bar-total">R$ 0,00</strong>
+            </div>
+            <button type="button" class="btn-checkout" onclick="PedidoApp.abrirCheckout()">
+                🛒 Ver Sacola & Pedir →
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE CHECKOUT / FINALIZAR PEDIDO -->
+    <div class="modal-backdrop" id="modal-checkout">
+        <div class="modal-sheet">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border);">
+                <h3 style="font-size:1.15rem;">🍦 Finalizar Pedido — Cone Mágico</h3>
+                <button type="button" class="qty-btn" style="width:32px; height:32px;" onclick="PedidoApp.fecharCheckout()">✕</button>
+            </div>
+
+            <div id="checkout-itens-list" style="margin-bottom:1rem;"></div>
+
+            <form id="form-pedido-online" onsubmit="event.preventDefault(); PedidoApp.enviarPedido();">
+                <label style="font-size:0.8rem; font-weight:700; color:#334155; display:block; margin-bottom:0.4rem;">Como deseja receber seu pedido?</label>
+                <div class="mode-switch">
+                    <button type="button" class="mode-btn active" id="btn-modo-delivery" onclick="PedidoApp.setModalidade('99Entrega / Motoboy')">
+                        🛵 Delivery em Casa<br><small style="font-weight:500;">99Entrega / Motoboy (+R$ 6,00)</small>
+                    </button>
+                    <button type="button" class="mode-btn" id="btn-modo-retirada" onclick="PedidoApp.setModalidade('Retirada no Balcão')">
+                        🏪 Retirar na Sorveteria<br><small style="font-weight:500;">Sem Taxa (R$ 0,00)</small>
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label>Seu Nome Completo *</label>
+                    <input type="text" id="ped-nome" class="form-control" required placeholder="Digite seu nome">
+                </div>
+
+                <div class="form-group">
+                    <label>Seu WhatsApp (acumula selos no Cartão Fidelidade!) *</label>
+                    <input type="tel" id="ped-telefone" class="form-control" required placeholder="(11) 99999-9999">
+                </div>
+
+                <div class="form-group" id="grupo-endereco">
+                    <label>Endereço Completo de Entrega (Rua, Nº, Bairro e Referência) *</label>
+                    <input type="text" id="ped-endereco" class="form-control" placeholder="Ex: Rua das Flores, 120, Centro (Próximo à praça)">
+                </div>
+
+                <div class="form-group">
+                    <label>Sabores Escolhidos / Observações do Pedido</label>
+                    <input type="text" id="ped-obs" class="form-control" placeholder="Ex: Casquinha de Flocos e Morango, cobertura de chocolate...">
+                </div>
+
+                <div class="form-group">
+                    <label>Forma de Pagamento *</label>
+                    <select id="ped-pagamento" class="form-control" onchange="PedidoApp.aoMudarPagamento()">
+                        <option value="PIX">PIX (Pagar agora / Chave PIX)</option>
+                        <option value="Cartão de Crédito">Cartão de Crédito (Levar Maquininha)</option>
+                        <option value="Cartão de Débito">Cartão de Débito (Levar Maquininha)</option>
+                        <option value="Dinheiro">Dinheiro na Entrega</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="grupo-troco" style="display:none;">
+                    <label>Precisa de troco para quanto? (R$)</label>
+                    <input type="number" step="0.50" id="ped-troco" class="form-control" placeholder="Ex: 50,00 (deixe em branco se não precisar)">
+                </div>
+
+                <div style="background:#fdf2f8; border:1px solid #f9a8d4; border-radius:12px; padding:0.9rem 1rem; margin:1rem 0;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#475569;">
+                        <span>Subtotal dos Sorvetes:</span>
+                        <span id="resumo-subtotal">R$ 0,00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#475569; margin-top:0.25rem;">
+                        <span>Taxa de Entrega (99Entrega / Motoboy):</span>
+                        <span id="resumo-taxa">R$ 6,00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:1.15rem; font-weight:800; color:#db2777; margin-top:0.45rem; padding-top:0.45rem; border-top:1px dashed #f472b6;">
+                        <span>Total do Pedido:</span>
+                        <span id="resumo-total">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-submit-pedido" class="btn-checkout" style="width:100%; font-size:1rem; padding:0.9rem;">
+                    ✅ Confirmar e Enviar Pedido para a Sorveteria
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE ACOMPANHAMENTO EM TEMPO REAL DO PEDIDO -->
+    <div class="modal-backdrop" id="modal-rastreio">
+        <div class="modal-sheet">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border);">
+                <h3 style="font-size:1.15rem;">🛵 Status do Seu Pedido</h3>
+                <button type="button" class="qty-btn" style="width:32px; height:32px;" onclick="PedidoApp.fecharModalRastreio()">✕</button>
+            </div>
+
+            <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                <input type="text" id="rastreio-codigo-input" class="form-control" placeholder="Digite o código (ex: DEL-2005)">
+                <button type="button" class="btn-add" style="white-space:nowrap;" onclick="PedidoApp.buscarStatusPedido()">Consultar</button>
+            </div>
+
+            <div id="rastreio-resultado"></div>
+        </div>
+    </div>
+
+    <script>
+        const PedidoApp = {
+            produtos: [],
+            carrinho: [],
+            categoriaAtual: "",
+            modalidade: "99Entrega / Motoboy",
+            taxaPadrao: 6.00,
+            ultimoCodigo: localStorage.getItem("cone_magico_ultimo_pedido") || "",
+            _pollTimer: null,
+
+            async init() {
+                try {
+                    const res = await fetch("/api/public/cardapio");
+                    const data = await res.json();
+                    this.produtos = data.produtos || [];
+                    this.taxaPadrao = Number(data.taxa_entrega_padrao ?? 6.00);
+                    this.renderProdutos();
+                } catch (e) {
+                    document.getElementById("produtos-grid").innerHTML = `<p style="padding:1rem; color:#dc2626;">Erro ao carregar o cardápio. Atualize a página.</p>`;
+                }
+            },
+
+            formatBRL(v) {
+                return Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+            },
+
+            setCategoria(cat, btnEl) {
+                this.categoriaAtual = cat;
+                document.querySelectorAll(".cat-pill").forEach((b) => b.classList.remove("active"));
+                if (btnEl) btnEl.classList.add("active");
+                this.renderProdutos();
+            },
+
+            renderProdutos() {
+                const busca = (document.getElementById("busca-input")?.value || "").toLowerCase().trim();
+                const grid = document.getElementById("produtos-grid");
+                const lista = this.produtos.filter((p) => {
+                    if (this.categoriaAtual && p.categoria !== this.categoriaAtual) return false;
+                    if (busca && !p.nome.toLowerCase().includes(busca) && !(p.sabor_detalhe || "").toLowerCase().includes(busca)) return false;
+                    return true;
+                });
+
+                if (lista.length === 0) {
+                    grid.innerHTML = `<p style="color:#64748b; padding:1.5rem 0; grid-column:1/-1; text-align:center;">Nenhum sorvete encontrado para esta busca.</p>`;
+                    return;
+                }
+
+                grid.innerHTML = lista.map((p) => `
+                    <div class="prod-card">
+                        <div>
+                            <div class="prod-cat">${p.categoria}</div>
+                            <div class="prod-title">${p.nome}</div>
+                            <div class="prod-desc">${p.sabor_detalhe || "Sorveteria Cone Mágico"}</div>
+                        </div>
+                        <div class="prod-footer">
+                            <span class="prod-price">${this.formatBRL(p.preco)}</span>
+                            <button type="button" class="btn-add" onclick="PedidoApp.adicionar(${p.id})">+ Adicionar</button>
+                        </div>
+                    </div>
+                `).join("");
+            },
+
+            adicionar(id) {
+                const prod = this.produtos.find((p) => p.id === id);
+                if (!prod) return;
+                const item = this.carrinho.find((i) => i.produto_id === id);
+                if (item) {
+                    item.qtd += 1;
+                } else {
+                    this.carrinho.push({
+                        produto_id: prod.id,
+                        nome: prod.nome,
+                        preco: Number(prod.preco),
+                        qtd: 1,
+                    });
+                }
+                this.atualizarBarraCarrinho();
+            },
+
+            alterarQtd(idx, delta) {
+                if (!this.carrinho[idx]) return;
+                this.carrinho[idx].qtd += delta;
+                if (this.carrinho[idx].qtd <= 0) {
+                    this.carrinho.splice(idx, 1);
+                }
+                this.atualizarBarraCarrinho();
+                this.renderCheckoutItens();
+                if (this.carrinho.length === 0) {
+                    this.fecharCheckout();
+                }
+            },
+
+            atualizarBarraCarrinho() {
+                const bar = document.getElementById("cart-bottom-bar");
+                const qtd = this.carrinho.reduce((acc, i) => acc + i.qtd, 0);
+                const sub = this.carrinho.reduce((acc, i) => acc + i.preco * i.qtd, 0);
+                if (qtd === 0) {
+                    bar.style.display = "none";
+                    return;
+                }
+                bar.style.display = "block";
+                document.getElementById("cart-bar-qtd").textContent = `${qtd} item(ns) na sacola`;
+                document.getElementById("cart-bar-total").textContent = this.formatBRL(sub);
+            },
+
+            abrirCheckout() {
+                if (this.carrinho.length === 0) return;
+                this.renderCheckoutItens();
+                document.getElementById("modal-checkout").classList.add("open");
+            },
+
+            fecharCheckout() {
+                document.getElementById("modal-checkout").classList.remove("open");
+            },
+
+            setModalidade(mod) {
+                this.modalidade = mod;
+                document.getElementById("btn-modo-delivery").classList.toggle("active", mod !== "Retirada no Balcão");
+                document.getElementById("btn-modo-retirada").classList.toggle("active", mod === "Retirada no Balcão");
+                document.getElementById("grupo-endereco").style.display = mod === "Retirada no Balcão" ? "none" : "block";
+                this.renderCheckoutItens();
+            },
+
+            aoMudarPagamento() {
+                const pag = document.getElementById("ped-pagamento").value;
+                document.getElementById("grupo-troco").style.display = pag === "Dinheiro" ? "block" : "none";
+            },
+
+            renderCheckoutItens() {
+                const box = document.getElementById("checkout-itens-list");
+                box.innerHTML = this.carrinho.map((it, idx) => `
+                    <div class="cart-item-row">
+                        <div style="flex:1;">
+                            <strong>${it.nome}</strong><br>
+                            <small style="color:#64748b;">${this.formatBRL(it.preco)} cada</small>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.4rem;">
+                            <button type="button" class="qty-btn" onclick="PedidoApp.alterarQtd(${idx}, -1)">-</button>
+                            <strong style="min-width:20px; text-align:center;">${it.qtd}</strong>
+                            <button type="button" class="qty-btn" onclick="PedidoApp.alterarQtd(${idx}, 1)">+</button>
+                        </div>
+                        <div style="min-width:75px; text-align:right; font-weight:700;">
+                            ${this.formatBRL(it.preco * it.qtd)}
+                        </div>
+                    </div>
+                `).join("");
+
+                const sub = this.carrinho.reduce((acc, i) => acc + i.preco * i.qtd, 0);
+                const taxa = this.modalidade === "Retirada no Balcão" ? 0 : this.taxaPadrao;
+                document.getElementById("resumo-subtotal").textContent = this.formatBRL(sub);
+                document.getElementById("resumo-taxa").textContent = taxa === 0 ? "Grátis (Retirada)" : this.formatBRL(taxa);
+                document.getElementById("resumo-total").textContent = this.formatBRL(sub + taxa);
+            },
+
+            async enviarPedido() {
+                const btn = document.getElementById("btn-submit-pedido");
+                btn.disabled = true;
+                btn.textContent = "⏳ Enviando pedido para o caixa...";
+
+                try {
+                    const body = {
+                        nome: document.getElementById("ped-nome").value,
+                        telefone: document.getElementById("ped-telefone").value,
+                        modalidade_entrega: this.modalidade,
+                        endereco_entrega: document.getElementById("ped-endereco").value,
+                        observacoes: document.getElementById("ped-obs").value,
+                        forma_pagamento: document.getElementById("ped-pagamento").value,
+                        troco_para: document.getElementById("ped-troco").value || 0,
+                        taxa_entrega: this.modalidade === "Retirada no Balcão" ? 0 : this.taxaPadrao,
+                        itens: this.carrinho,
+                    };
+
+                    const resp = await fetch("/api/public/pedido", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body),
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok) {
+                        throw new Error(data.erro || "Não foi possível enviar o pedido.");
+                    }
+
+                    this.carrinho = [];
+                    this.atualizarBarraCarrinho();
+                    this.fecharCheckout();
+
+                    this.ultimoCodigo = data.codigo_pedido;
+                    localStorage.setItem("cone_magico_ultimo_pedido", data.codigo_pedido);
+                    this.abrirModalRastreio(data.codigo_pedido);
+                } catch (e) {
+                    alert(e.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = "✅ Confirmar e Enviar Pedido para a Sorveteria";
+                }
+            },
+
+            abrirModalRastreio(codigo = null) {
+                const cod = codigo || this.ultimoCodigo || "";
+                document.getElementById("rastreio-codigo-input").value = cod;
+                document.getElementById("modal-rastreio").classList.add("open");
+                if (cod) {
+                    this.buscarStatusPedido();
+                } else {
+                    document.getElementById("rastreio-resultado").innerHTML = `<p style="color:#64748b; font-size:0.86rem;">Digite o código do seu pedido acima (ex: <strong>DEL-2005</strong>) para acompanhar em tempo real.</p>`;
+                }
+            },
+
+            fecharModalRastreio() {
+                document.getElementById("modal-rastreio").classList.remove("open");
+                clearInterval(this._pollTimer);
+            },
+
+            async buscarStatusPedido() {
+                const cod = (document.getElementById("rastreio-codigo-input").value || "").trim().toUpperCase();
+                if (!cod) return;
+                const box = document.getElementById("rastreio-resultado");
+                try {
+                    const resp = await fetch(`/api/public/pedido/${encodeURIComponent(cod)}`);
+                    const p = await resp.json();
+                    if (!resp.ok) throw new Error(p.erro || "Pedido não encontrado.");
+
+                    const st = p.status_delivery || "Novo / Recebido";
+                    const etapas = [
+                        { key: "Novo / Recebido", label: "1. Pedido Recebido no Caixa da Sorveteria" },
+                        { key: "Em Preparo", label: "2. Separando e Montando seus Sorvetes" },
+                        { key: "Saiu p/ Entrega", label: "3. Saiu para Entrega (99Entrega / Motoboy)" },
+                        { key: "Entregue", label: "4. Pedido Entregue / Concluído!" },
+                    ];
+
+                    let idxAtual = 0;
+                    if (st === "Em Preparo") idxAtual = 1;
+                    else if (st.startsWith("Saiu p/ Entrega")) idxAtual = 2;
+                    else if (st === "Entregue" || st === "Concluído") idxAtual = 3;
+
+                    const stepsHtml = etapas.map((et, i) => {
+                        const cls = i < idxAtual ? "done" : i === idxAtual ? "current" : "";
+                        const icon = i < idxAtual ? "✅" : i === idxAtual ? "🍨" : "⏳";
+                        return `<div class="step-badge ${cls}"><span>${icon}</span> <span>${et.label}</span></div>`;
+                    }).join("");
+
+                    box.innerHTML = `
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1rem; margin-bottom:0.85rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <strong style="font-size:1.05rem; color:#db2777;">Pedido #${p.codigo_pedido}</strong>
+                                <span style="font-size:0.78rem; color:#64748b;">Hoje às ${p.hora_venda}</span>
+                            </div>
+                            <div style="font-size:0.84rem; color:#334155; margin-bottom:0.4rem;">
+                                <strong>Itens:</strong> ${p.itens_resumo}
+                            </div>
+                            <div style="font-size:0.84rem; color:#334155; margin-bottom:0.4rem;">
+                                <strong>Entrega:</strong> ${p.modalidade_entrega} (${p.endereco_entrega || "Balcão"})
+                            </div>
+                            ${p.entregador_info ? `<div style="font-size:0.84rem; color:#7c3aed; font-weight:700; margin-bottom:0.4rem;">🛵 Entregador / 99Entrega: ${p.entregador_info}</div>` : ""}
+                            <div style="font-size:0.92rem; font-weight:800; color:#0f172a; margin-top:0.4rem;">
+                                Total: ${this.formatBRL(p.valor_total)} (${p.forma_pagamento})
+                            </div>
+                            <div style="font-size:0.78rem; color:#9d174d; margin-top:0.4rem; background:#fdf2f8; padding:0.4rem 0.6rem; border-radius:8px;">
+                                🎁 Seu saldo no Cartão Fidelidade: <strong>${p.pontos_fidelidade}/10 selos</strong>
+                            </div>
+                        </div>
+                        <h4 style="font-size:0.84rem; color:#475569; margin-bottom:0.5rem; text-transform:uppercase;">Andamento em Tempo Real (Atualiza sozinho):</h4>
+                        ${stepsHtml}
+                    `;
+
+                    clearInterval(this._pollTimer);
+                    if (idxAtual < 3 && st !== "Cancelado") {
+                        this._pollTimer = setInterval(() => this.buscarStatusPedido(), 8000);
+                    }
+                } catch (e) {
+                    box.innerHTML = `<p style="color:#dc2626; font-size:0.86rem;">${e.message}</p>`;
+                }
+            }
+        };
+
+        window.addEventListener("DOMContentLoaded", () => PedidoApp.init());
+    </script>
+</body>
+</html>

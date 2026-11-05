@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cone Mágico | Sistema de Gestão para Sorveteria & PDV</title>
-    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=3">
-    <link rel="stylesheet" href="/static/css/style.css?v=3">
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=4">
+    <link rel="stylesheet" href="/static/css/style.css?v=4">
 </head>
 <body>
     <!-- TELA DE LOGIN -->
@@ -78,6 +78,10 @@
                 <button class="nav-btn" data-view="pdv" onclick="App.navigate('pdv')">
                     <span>🍦</span> PDV / Frente de Caixa
                     <span class="badge-nav">Vendas</span>
+                </button>
+                <button class="nav-btn" data-view="delivery" onclick="App.navigate('delivery')">
+                    <span>🛵</span> Delivery & Cardápio Online
+                    <span class="badge-nav" id="nav-badge-delivery" style="background:#16a34a; color:#fff;">/pedir</span>
                 </button>
                 <button class="nav-btn" data-view="cardapio" onclick="App.navigate('cardapio')">
                     <span>🍨</span> Cardápio & Sabores
@@ -385,6 +389,95 @@
                                 </tr>
                             </thead>
                             <tbody id="vendas-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.5 VIEW: CENTRAL DE DELIVERY PRÓPRIO (/pedir) & 99ENTREGA / MOTOBOY -->
+            <section id="view-delivery" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>🛵 Central de Delivery & Cardápio Digital Próprio (Taxa Zero)</h2>
+                        <p>Pedidos recebidos pelo site <code>/pedir</code> da sorveteria • Envio via 99Entrega ou Motoboy próprio (0% de comissão)</p>
+                    </div>
+                    <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                        <button class="btn btn-secondary" onclick="App.copiarLinkCardapioOnline()">📋 Copiar Link do Cardápio (/pedir)</button>
+                        <a href="/pedir" target="_blank" class="btn btn-primary" style="text-decoration:none;">📱 Abrir Cardápio Digital do Cliente ↗</a>
+                    </div>
+                </div>
+
+                <!-- BANNER DO LINK DO CARDÁPIO ONLINE -->
+                <div class="card" style="background:linear-gradient(135deg, #fdf2f8 0%, #f5f3ff 100%); border:1px solid #f472b6;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                        <div>
+                            <strong style="color:#9d174d; font-size:1rem;">🔗 Link do Cardápio Digital para WhatsApp & Instagram (Taxa R$ 0):</strong>
+                            <p style="font-size:0.84rem; color:#475569; margin-top:0.2rem;">
+                                Envie este link para seus clientes fazerem pedidos pelo celular. O pedido cai direto aqui no Caixa e já pontua no Cartão Fidelidade!
+                            </p>
+                        </div>
+                        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                            <input type="text" id="input-link-pedir" class="form-control" readonly style="min-width:250px; font-weight:700; color:#be185d; background:#fff;" value="https://cone-magico.vercel.app/pedir">
+                            <button class="btn btn-primary" onclick="App.copiarLinkCardapioOnline()">Copiar Link</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Novos Pedidos (Fila)</div>
+                        <div class="kpi-value" style="color: var(--primary);" id="del-kpi-novos">0</div>
+                        <div class="kpi-sub">Aguardando preparo no balcão</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Em Preparo</div>
+                        <div class="kpi-value" style="color: var(--warning);" id="del-kpi-preparo">0</div>
+                        <div class="kpi-sub">Sendo montados agora</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Em Rota (99Entrega / Motoboy)</div>
+                        <div class="kpi-value" style="color: #7c3aed;" id="del-kpi-rota">0</div>
+                        <div class="kpi-sub">Saíram para o endereço do cliente</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Entregas Hoje (Taxa Zero)</div>
+                        <div class="kpi-value" style="color: var(--success);" id="del-kpi-hoje">R$ 0,00</div>
+                        <div class="kpi-sub" id="del-kpi-hoje-sub">0 pedidos entregues hoje</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>📦 Fila de Pedidos do Cardápio Digital & Delivery</h3>
+                            <small style="color:#64748b;">Copie o endereço em 1 clique para chamar na <strong>99Entrega</strong> e imprima a comanda do motoboy</small>
+                        </div>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <select id="filtro-delivery-status" class="form-control" onchange="App.loadDelivery()">
+                                <option value="">Todos os Status</option>
+                                <option value="Novo / Recebido">🔔 Novos / Recebidos</option>
+                                <option value="Em Preparo">🍨 Em Preparo</option>
+                                <option value="Saiu p/ Entrega (99Entrega)">🛵 Em Rota (99Entrega / Motoboy)</option>
+                                <option value="Entregue">✅ Entregues / Concluídos</option>
+                            </select>
+                            <button class="btn btn-sm btn-secondary" onclick="App.loadDelivery()">🔄 Atualizar Fila</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pedido / Hora</th>
+                                    <th>Cliente / WhatsApp</th>
+                                    <th>Endereço (p/ 99Entrega)</th>
+                                    <th>Itens & Observações</th>
+                                    <th>Pagto. / Total</th>
+                                    <th>Status Delivery</th>
+                                    <th>Ações Rápidas (Caixa / 99Entrega)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="delivery-tbody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -1214,6 +1307,6 @@
     </div>
 
     <div id="toast" class="toast"></div>
-    <script src="/static/js/app.js?v=3"></script>
+    <script src="/static/js/app.js?v=4"></script>
 </body>
 </html>

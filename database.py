@@ -284,7 +284,7 @@ def init_db():
     )
     """)
 
-    # 5. Tabela de Vendas / Pedidos do PDV
+    # 5. Tabela de Vendas / Pedidos do PDV e Cardápio Digital (/pedir)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS vendas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -303,11 +303,36 @@ def init_db():
         tipo_atendimento TEXT DEFAULT 'Balcão',
         status TEXT DEFAULT 'Concluída' CHECK(status IN ('Concluída', 'Em Preparo', 'Cancelada')),
         observacoes TEXT,
+        endereco_entrega TEXT,
+        taxa_entrega REAL DEFAULT 0.0,
+        troco_para REAL DEFAULT 0.0,
+        modalidade_entrega TEXT DEFAULT 'Balcão',
+        status_delivery TEXT DEFAULT 'Concluído',
+        entregador_info TEXT,
+        cliente_telefone TEXT,
+        cliente_nome_avulso TEXT,
         criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL,
         FOREIGN KEY (funcionario_id) REFERENCES usuarios(id)
     )
     """)
+
+    # Migração automática para bancos já existentes (Turso / SQLite)
+    novas_colunas_vendas = [
+        ("endereco_entrega", "TEXT"),
+        ("taxa_entrega", "REAL DEFAULT 0.0"),
+        ("troco_para", "REAL DEFAULT 0.0"),
+        ("modalidade_entrega", "TEXT DEFAULT 'Balcão'"),
+        ("status_delivery", "TEXT DEFAULT 'Concluído'"),
+        ("entregador_info", "TEXT"),
+        ("cliente_telefone", "TEXT"),
+        ("cliente_nome_avulso", "TEXT"),
+    ]
+    for col_name, col_def in novas_colunas_vendas:
+        try:
+            cursor.execute(f"ALTER TABLE vendas ADD COLUMN {col_name} {col_def}")
+        except Exception:
+            pass
 
     # 6. Tabela Financeira (Receitas de Vendas, Sangrias/Suprimentos de Caixa e Despesas da Sorveteria)
     cursor.execute("""

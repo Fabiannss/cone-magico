@@ -601,7 +601,9 @@ def handle_get_vendas(query: dict):
     status = query.get("status")
 
     sql = """
-        SELECT v.*, c.nome as cliente_nome, c.telefone as cliente_telefone, c.cpf as cliente_cpf,
+        SELECT v.*, COALESCE(c.nome, v.cliente_nome_avulso) as cliente_nome,
+               COALESCE(c.telefone, v.cliente_telefone) as cliente_telefone,
+               c.cpf as cliente_cpf,
                u.nome as funcionario_nome
         FROM vendas v
         LEFT JOIN clientes c ON c.id = v.cliente_id
@@ -777,11 +779,350 @@ def handle_create_venda(body: dict, headers: dict):
 
 def handle_cancel_venda(venda_id: int):
     conn = get_connection()
-    conn.execute("UPDATE vendas SET status = 'Cancelada' WHERE id = ?", (venda_id,))
+    conn.execute("UPDATE vendas SET status = 'Cancelada', status_delivery = 'Cancelado' WHERE id = ?", (venda_id,))
     conn.execute("DELETE FROM financeiro WHERE venda_id = ?", (venda_id,))
     conn.commit()
     conn.close()
     return {"mensagem": "Pedido cancelado e estornado do caixa."}
+
+
+# ==========================================
+# CARDÁPIO DIGITAL ONLINE (/pedir) & CENTRAL DE DELIVERY (99ENTREGA / MOTOBOY)
+# Taxa Zero (0% Comissão) — Integrado direto ao Caixa e Fidelidade
+# ==========================================
+
+def handle_public_cardapio():
+    conn = get_connection()
+    produtos = rows_to_list(
+        conn.execute(
+            """
+            SELECT id, nome, categoria, sabor_detalhe, preco, disponivel, destaque
+            FROM produtos
+            WHERE disponivel = 1
+            ORDER BY CASE
+                WHEN categoria = 'Casquinha / Cascão' THEN 1
+                WHEN categoria = 'Copo / Sundae' THEN 2
+                WHEN categoria = 'Taças Especiais' THEN 3
+                WHEN categoria = 'Milkshake' THEN 4
+                WHEN categoria = 'Picolé' THEN 5
+                WHEN categoria = 'Pote / Viagem' THEN 6
+                ELSE 7
+            END, destaque DESC, nome ASC
+            """
+        ).fetchall()
+    )
+    conn.close()
+    return {
+        "loja": "Sorveteria Cone Mágico",
+        "taxa_entrega_padrao": 6.00,
+        "tempo_estimado": "25 a 40 min",
+        "produtos": produtos,
+    }
+
+
+def handle_public_criar_pedido(body: dict):
+    nome = (body.get("nome") or "").strip()
+    telefone = (body.get("telefone") or "").strip()
+    modalidade = (body.get("modalidade_entrega") or "99Entrega / Motoboy").strip()
+    endereco = (body.get("endereco_entrega") or "").strip()
+    forma_pagamento = (body.get("forma_pagamento") or "PIX").strip()
+    troco_para = float(body.get("troco_para") or 0.0)
+    observacoes = (body.get("observacoes") or "").strip()
+    itens = body.get("itens") or []
+
+    if not nome or not telefone:
+        raise APIError("Informe seu Nome e WhatsApp para realizar o pedido.")
+    if not itens:
+        raise APIError("Seu carrinho está vazio! Escolha pelo menos 1 item do cardápio.")
+    if modalidade != "Retirada no Balcão" and not endereco:
+        raise APIError("Informe o endereço completo (Rua, Número, Bairro) para a entrega.")
+
+    subtotal = 0.0
+    qtd_sorvetes = 0
+    resumo_parts = []
+    itens_clean = []
+
+    for it in itens:
+        q = int(it.get("qtd") or 1)
+        if q <= 0:
+            continue
+        preco = float(it.get("preco") or 0.0)
+        nome_prod = it.get("nome") or "Sorvete"
+        sub = round(q * preco, 2)
+        subtotal += sub
+        qtd_sorvetes += q
+        resumo_parts.append(f"{q}x {nome_prod}")
+        itens_clean.append(
+            {
+                "produto_id": it.get("produto_id"),
+                "nome": nome_prod,
+                "qtd": q,
+                "preco": preco,
+                "subtotal": sub,
+            }
+        )
+
+    taxa_entrega = 0.0 if modalidade == "Retirada no Balcão" else float(body.get("taxa_entrega", 6.00))
+    valor_total = round(subtotal + taxa_entrega, 2)
+    itens_resumo = ", ".join(resumo_parts)
+
+    agora = datetime.now()
+    data_venda = agora.strftime("%Y-%m-%d")
+    hora_venda = agora.strftime("%H:%M")
+
+    conn = get_connection()
+    ensure_default_users(conn)
+
+    # Vincular ou cadastrar cliente automaticamente pelo telefone para pontuar no Fidelidade!
+    tel_digits = re.sub(r"\D", "", telefone)
+    cli_row = None
+    if tel_digits:
+        todos_cli = rows_to_list(conn.execute("SELECT * FROM clientes").fetchall())
+        for c in todos_cli:
+            c_digits = re.sub(r"\D", "", c.get("telefone") or "")
+            if c_digits and c_digits == tel_digits:
+                cli_row = c
+                break
+
+    if cli_row:
+        cliente_id = cli_row["id"]
+        novos_pts = (cli_row.get("pontos_fidelidade") or 0) + qtd_sorvetes
+        novo_total = round((cli_row.get("total_compras") or 0.0) + valor_total, 2)
+        novo_status = "VIP" if novos_pts >= 10 or novo_total >= 150 else "Ativo"
+        conn.execute(
+            """
+            UPDATE clientes SET
+                pontos_fidelidade = ?, total_compras = ?, status = ?,
+                observacoes = COALESCE(observacoes, ?)
+            WHERE id = ?
+            """,
+            (novos_pts, novo_total, novo_status, f"Endereço Delivery: {endereco}" if endereco else "", cliente_id),
+        )
+    else:
+        novo_status = "VIP" if qtd_sorvetes >= 10 or valor_total >= 150 else "Ativo"
+        cur_cli = conn.execute(
+            """
+            INSERT INTO clientes (nome, cpf, telefone, sabor_favorito, pontos_fidelidade, premios_resgatados, total_compras, status, observacoes)
+            VALUES (?, NULL, ?, ?, ?, 0, ?, ?, ?)
+            """,
+            (
+                nome,
+                telefone,
+                itens_clean[0]["nome"] if itens_clean else "Sorvete",
+                qtd_sorvetes,
+                valor_total,
+                novo_status,
+                f"Cadastrado pelo Cardápio Digital (/pedir). Endereço: {endereco}" if endereco else "Cadastrado pelo Cardápio Digital (/pedir)",
+            ),
+        )
+        cliente_id = cur_cli.lastrowid
+        novos_pts = qtd_sorvetes
+
+    # Atendente padrão para vínculo inicial do pedido online
+    op_row = conn.execute("SELECT id FROM usuarios WHERE ativo = 1 ORDER BY CASE WHEN perfil = 'funcionario' THEN 0 ELSE 1 END LIMIT 1").fetchone()
+    funcionario_id = op_row["id"] if op_row else 1
+
+    ultimo_id = conn.execute("SELECT COALESCE(MAX(id), 0) as m FROM vendas").fetchone()["m"]
+    codigo_pedido = f"DEL-{2001 + ultimo_id}"
+    tipo_atendimento = "Retirada Online" if modalidade == "Retirada no Balcão" else "Delivery Online"
+
+    cur = conn.execute(
+        """
+        INSERT INTO vendas (
+            codigo_pedido, cliente_id, funcionario_id, data_venda, hora_venda,
+            itens_resumo, itens_json, quantidade_sorvetes, subtotal, desconto,
+            valor_total, forma_pagamento, tipo_atendimento, status, observacoes,
+            endereco_entrega, taxa_entrega, troco_para, modalidade_entrega,
+            status_delivery, entregador_info, cliente_telefone, cliente_nome_avulso
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, ?, ?, ?, 'Em Preparo', ?, ?, ?, ?, ?, 'Novo / Recebido', '', ?, ?)
+        """,
+        (
+            codigo_pedido,
+            cliente_id,
+            funcionario_id,
+            data_venda,
+            hora_venda,
+            itens_resumo,
+            json.dumps(itens_clean, ensure_ascii=False),
+            qtd_sorvetes,
+            subtotal,
+            valor_total,
+            forma_pagamento,
+            tipo_atendimento,
+            observacoes,
+            endereco if modalidade != "Retirada no Balcão" else "Retirada no Balcão da Sorveteria",
+            taxa_entrega,
+            troco_para,
+            modalidade,
+            telefone,
+            nome,
+        ),
+    )
+    venda_id = cur.lastrowid
+
+    # Lançar no Financeiro como Receita de Delivery / App (Taxa Zero)
+    status_fin = "Pago" if forma_pagamento == "PIX" else "Pendente"
+    data_pag_fin = data_venda if status_fin == "Pago" else None
+    obs_fin = f"Cliente: {nome} ({telefone}) • {modalidade}" + (f" • End: {endereco}" if endereco else "")
+    conn.execute(
+        """
+        INSERT INTO financeiro (
+            tipo, categoria, descricao, cliente_id, funcionario_id, venda_id,
+            valor, data_vencimento, data_pagamento, status_pagamento,
+            forma_pagamento, origem_caixa, observacoes
+        ) VALUES ('Receita', 'Delivery / App', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Cardápio Online', ?)
+        """,
+        (
+            f"Pedido Online #{codigo_pedido} — {itens_resumo[:85]}",
+            cliente_id,
+            funcionario_id,
+            venda_id,
+            valor_total,
+            data_venda,
+            data_pag_fin,
+            status_fin,
+            forma_pagamento,
+            obs_fin,
+        ),
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "id": venda_id,
+        "codigo_pedido": codigo_pedido,
+        "valor_total": valor_total,
+        "subtotal": subtotal,
+        "taxa_entrega": taxa_entrega,
+        "status_delivery": "Novo / Recebido",
+        "pontos_fidelidade": novos_pts,
+        "mensagem": f"Pedido #{codigo_pedido} enviado para a Sorveteria Cone Mágico! Você acumulou +{qtd_sorvetes} selo(s) no Cartão Fidelidade ({novos_pts}/10)!",
+    }
+
+
+def handle_public_consultar_pedido(codigo: str):
+    conn = get_connection()
+    row = conn.execute(
+        """
+        SELECT v.id, v.codigo_pedido, v.data_venda, v.hora_venda, v.itens_resumo, v.itens_json,
+               v.subtotal, v.taxa_entrega, v.valor_total, v.forma_pagamento, v.troco_para,
+               v.modalidade_entrega, v.endereco_entrega, v.status, v.status_delivery,
+               v.entregador_info, v.observacoes,
+               COALESCE(c.nome, v.cliente_nome_avulso) as cliente_nome,
+               COALESCE(c.telefone, v.cliente_telefone) as cliente_telefone,
+               COALESCE(c.pontos_fidelidade, 0) as pontos_fidelidade
+        FROM vendas v
+        LEFT JOIN clientes c ON c.id = v.cliente_id
+        WHERE upper(v.codigo_pedido) = ?
+        """,
+        (codigo.strip().upper(),),
+    ).fetchone()
+    conn.close()
+    if not row:
+        raise APIError("Pedido não encontrado.", 404)
+    return row_to_dict(row)
+
+
+def handle_get_delivery(query: dict, headers: dict):
+    require_auth(headers)
+    status_filtro = query.get("status_delivery") or ""
+    hoje = datetime.now().strftime("%Y-%m-%d")
+
+    conn = get_connection()
+    rows = rows_to_list(
+        conn.execute(
+            """
+            SELECT v.*, COALESCE(c.nome, v.cliente_nome_avulso) as cliente_nome,
+                   COALESCE(c.telefone, v.cliente_telefone) as cliente_telefone,
+                   COALESCE(c.pontos_fidelidade, 0) as pontos_fidelidade,
+                   u.nome as funcionario_nome
+            FROM vendas v
+            LEFT JOIN clientes c ON c.id = v.cliente_id
+            LEFT JOIN usuarios u ON u.id = v.funcionario_id
+            WHERE (v.codigo_pedido LIKE 'DEL-%' OR v.tipo_atendimento IN ('Delivery', 'Delivery Online', 'Retirada Online'))
+            ORDER BY
+                CASE
+                    WHEN v.status_delivery = 'Novo / Recebido' THEN 1
+                    WHEN v.status_delivery = 'Em Preparo' THEN 2
+                    WHEN v.status_delivery LIKE 'Saiu p/ Entrega%' THEN 3
+                    WHEN v.status_delivery = 'Entregue' THEN 4
+                    ELSE 5
+                END ASC,
+                v.id DESC
+            """
+        ).fetchall()
+    )
+    conn.close()
+
+    novos = sum(1 for r in rows if (r.get("status_delivery") or "Novo / Recebido") == "Novo / Recebido" and r.get("status") != "Cancelada")
+    em_preparo = sum(1 for r in rows if r.get("status_delivery") == "Em Preparo" and r.get("status") != "Cancelada")
+    em_rota = sum(1 for r in rows if (r.get("status_delivery") or "").startswith("Saiu p/ Entrega") and r.get("status") != "Cancelada")
+    entregues_hoje = sum(1 for r in rows if (r.get("status_delivery") in ("Entregue", "Concluído")) and r.get("data_venda") == hoje and r.get("status") != "Cancelada")
+    faturamento_hoje = sum(float(r.get("valor_total") or 0) for r in rows if r.get("data_venda") == hoje and r.get("status") != "Cancelada")
+
+    filtrados = rows
+    if status_filtro:
+        filtrados = [r for r in rows if (r.get("status_delivery") or "") == status_filtro]
+
+    return {
+        "kpis": {
+            "novos": novos,
+            "em_preparo": em_preparo,
+            "em_rota": em_rota,
+            "pendentes_total": novos + em_preparo + em_rota,
+            "entregues_hoje": entregues_hoje,
+            "faturamento_hoje": faturamento_hoje,
+        },
+        "pedidos": filtrados,
+    }
+
+
+def handle_update_delivery_status(venda_id: int, body: dict, headers: dict):
+    user = require_auth(headers)
+    novo_status_del = (body.get("status_delivery") or "Em Preparo").strip()
+    entregador_info = (body.get("entregador_info") or "").strip()
+    hoje = datetime.now().strftime("%Y-%m-%d")
+
+    conn = get_connection()
+    venda = conn.execute("SELECT * FROM vendas WHERE id = ?", (venda_id,)).fetchone()
+    if not venda:
+        conn.close()
+        raise APIError("Pedido de delivery não encontrado.", 404)
+
+    status_venda = venda["status"]
+    if novo_status_del == "Entregue":
+        status_venda = "Concluída"
+    elif novo_status_del == "Cancelado":
+        status_venda = "Cancelada"
+    else:
+        status_venda = "Em Preparo"
+
+    info_final = entregador_info if entregador_info else (venda["entregador_info"] or "")
+    conn.execute(
+        """
+        UPDATE vendas SET
+            status_delivery = ?, status = ?, entregador_info = ?, funcionario_id = ?
+        WHERE id = ?
+        """,
+        (novo_status_del, status_venda, info_final, user["id"], venda_id),
+    )
+
+    if novo_status_del == "Entregue":
+        conn.execute(
+            "UPDATE financeiro SET status_pagamento = 'Pago', data_pagamento = COALESCE(data_pagamento, ?) WHERE venda_id = ?",
+            (hoje, venda_id),
+        )
+    elif novo_status_del == "Cancelado":
+        conn.execute("DELETE FROM financeiro WHERE venda_id = ?", (venda_id,))
+
+    conn.commit()
+    conn.close()
+    return {
+        "id": venda_id,
+        "status_delivery": novo_status_del,
+        "mensagem": f"Status do pedido #{venda['codigo_pedido']} atualizado para '{novo_status_del}'!",
+    }
 
 
 # ==========================================
@@ -1134,6 +1475,22 @@ def dispatch_api(method: str, path: str, query: dict, body: dict, headers: dict)
         require_auth(headers)
         return handle_cancel_venda(int(m_ven.group(1)))
 
+    # Cardápio Digital Online (/pedir) — Rotas Públicas para Clientes (Taxa Zero)
+    if path == "/api/public/cardapio" and method == "GET":
+        return handle_public_cardapio()
+    if path == "/api/public/pedido" and method == "POST":
+        return handle_public_criar_pedido(body)
+    m_pub_ped = re.match(r"^/api/public/pedido/([A-Za-z0-9\-]+)$", path)
+    if m_pub_ped and method == "GET":
+        return handle_public_consultar_pedido(m_pub_ped.group(1))
+
+    # Central de Delivery & 99Entrega (Funcionário e Admin)
+    if path == "/api/delivery" and method == "GET":
+        return handle_get_delivery(query, headers)
+    m_del_st = re.match(r"^/api/delivery/(\d+)/status$", path)
+    if m_del_st and method == "PATCH":
+        return handle_update_delivery_status(int(m_del_st.group(1)), body, headers)
+
     # Caixa Rápido do Funcionário (Sangria / Suprimento de Balcão)
     if path == "/api/caixa-rapido" and method == "GET":
         return handle_get_caixa_rapido(headers)
@@ -1177,10 +1534,21 @@ def wsgi_app(environ, start_response):
 
     no_cache = [("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")]
 
-    # Servir página principal
+    # Servir página principal (Gestão & PDV)
     if path == "/" and method in ("GET", "HEAD"):
         index_path = os.path.join(BASE_DIR, "templates", "index.html")
         with open(index_path, "rb") as f:
+            content = f.read()
+        start_response(
+            "200 OK",
+            [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(content)))] + no_cache,
+        )
+        return [] if method == "HEAD" else [content]
+
+    # Servir Cardápio Digital Online Público (/pedir) para Clientes (Delivery & Retirada Taxa Zero)
+    if path.rstrip("/") == "/pedir" and method in ("GET", "HEAD"):
+        pedir_path = os.path.join(BASE_DIR, "templates", "pedir.html")
+        with open(pedir_path, "rb") as f:
             content = f.read()
         start_response(
             "200 OK",

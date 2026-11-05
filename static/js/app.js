@@ -107,6 +107,7 @@ const App = {
             this.loadClientes(),
             this.loadEstoque(),
             this.loadUsuarios(),
+            this.loadDelivery(),
         ]);
 
         if (user.perfil === "admin") {
@@ -199,6 +200,7 @@ const App = {
 
         if (view === "dashboard") this.loadDashboard();
         if (view === "pdv") this.initPDV();
+        if (view === "delivery") this.loadDelivery();
         if (view === "cardapio") this.loadProdutos();
         if (view === "estoque") this.loadEstoque();
         if (view === "clientes") this.loadClientes();
@@ -640,8 +642,19 @@ const App = {
                         <strong>Data/Hora:</strong> ${this.formatDateBR(v.data_venda)} às ${v.hora_venda}<br>
                         <strong>Atendimento:</strong> ${v.tipo_atendimento}<br>
                         <strong>Cliente:</strong> ${v.cliente_nome || "Consumidor Balcão"}<br>
+                        ${v.cliente_telefone ? `<strong>WhatsApp:</strong> ${v.cliente_telefone}<br>` : ""}
                         <strong>Atendente:</strong> ${v.funcionario_nome || "-"}
                     </div>
+                    ${
+                        v.endereco_entrega
+                            ? `<div class="divider"></div>
+                               <div style="font-size:12px; background:#fef3c7; border:1px dashed #d97706; padding:8px; border-radius:6px;">
+                                   <strong>🛵 ENTREGA (${v.modalidade_entrega || "99Entrega / Motoboy"}):</strong><br>
+                                   ${v.endereco_entrega}
+                                   ${v.entregador_info ? `<br><strong>Entregador:</strong> ${v.entregador_info}` : ""}
+                               </div>`
+                            : ""
+                    }
                     <div class="divider"></div>
                     <table>
                         <thead>
@@ -658,16 +671,22 @@ const App = {
                         <span>${this.formatBRL(v.subtotal)}</span>
                     </div>
                     ${
+                        Number(v.taxa_entrega || 0) > 0
+                            ? `<div style="display:flex; justify-content:space-between; font-size:13px;"><span>Taxa Entrega:</span><span>+ ${this.formatBRL(v.taxa_entrega)}</span></div>`
+                            : ""
+                    }
+                    ${
                         v.desconto > 0
                             ? `<div style="display:flex; justify-content:space-between; font-size:13px;"><span>Desconto:</span><span>- ${this.formatBRL(v.desconto)}</span></div>`
                             : ""
                     }
                     <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:bold; margin-top:6px;">
-                        <span>TOTAL PAGO:</span>
+                        <span>TOTAL:</span>
                         <span>${this.formatBRL(v.valor_total)}</span>
                     </div>
                     <div style="font-size:12px; margin-top:6px;">
                         <strong>Forma de Pagamento:</strong> ${v.forma_pagamento}
+                        ${Number(v.troco_para || 0) > 0 ? `<br><strong>Troco para:</strong> ${this.formatBRL(v.troco_para)} (Levar ${this.formatBRL(Math.max(0, Number(v.troco_para) - Number(v.valor_total)))} de troco)` : ""}
                     </div>
                     ${v.observacoes ? `<div style="font-size:12px; margin-top:6px;"><strong>Obs:</strong> ${v.observacoes}</div>` : ""}
                     <div class="divider"></div>
@@ -689,6 +708,181 @@ const App = {
             const res = await this.api(`/api/vendas/${id}`, { method: "DELETE" });
             this.toast(res.mensagem);
             await this.loadVendas();
+            await this.loadDelivery();
+            if (this.currentUser && this.currentUser.perfil === "admin") {
+                await this.loadDashboard();
+            }
+        } catch (e) {
+            this.toast(e.message);
+        }
+    },
+
+    // ==========================================
+    // 2.5 CENTRAL DE DELIVERY (/pedir) & 99ENTREGA / MOTOBOY
+    // ==========================================
+    copiarLinkCardapioOnline() {
+        const url = `${window.location.origin}/pedir`;
+        const inputEl = document.getElementById("input-link-pedir");
+        if (inputEl) inputEl.value = url;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url);
+        }
+        this.toast("🔗 Link do Cardápio Digital copiado! Cole no WhatsApp ou Instagram da sorveteria.");
+    },
+
+    copiarEndereco99(endereco, cliente, telefone) {
+        const texto = `${endereco} — Cliente: ${cliente} (${telefone || "S/ Tel"})`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(texto);
+        }
+        this.toast("📋 Endereço copiado! Pronto para colar no aplicativo da 99Entrega.");
+    },
+
+    async loadDelivery() {
+        try {
+            const linkEl = document.getElementById("input-link-pedir");
+            if (linkEl) linkEl.value = `${window.location.origin}/pedir`;
+
+            const stFiltro = document.getElementById("filtro-delivery-status")?.value || "";
+            const params = new URLSearchParams();
+            if (stFiltro) params.set("status_delivery", stFiltro);
+
+            const data = await this.api(`/api/delivery?${params.toString()}`);
+            const kpis = data.kpis || {};
+            this.pedidosDelivery = data.pedidos || [];
+
+            const elNovos = document.getElementById("del-kpi-novos");
+            if (elNovos) elNovos.textContent = kpis.novos ?? 0;
+            const elPrep = document.getElementById("del-kpi-preparo");
+            if (elPrep) elPrep.textContent = kpis.em_preparo ?? 0;
+            const elRota = document.getElementById("del-kpi-rota");
+            if (elRota) elRota.textContent = kpis.em_rota ?? 0;
+            const elHoje = document.getElementById("del-kpi-hoje");
+            if (elHoje) elHoje.textContent = this.formatBRL(kpis.faturamento_hoje || 0);
+            const elHojeSub = document.getElementById("del-kpi-hoje-sub");
+            if (elHojeSub) elHojeSub.textContent = `${kpis.entregues_hoje || 0} pedido(s) entregue(s) hoje`;
+
+            const navBadge = document.getElementById("nav-badge-delivery");
+            if (navBadge) {
+                const pend = kpis.pendentes_total || 0;
+                if (pend > 0) {
+                    navBadge.textContent = `${pend} fila`;
+                    navBadge.style.background = "#ef4444";
+                } else {
+                    navBadge.textContent = "/pedir";
+                    navBadge.style.background = "#16a34a";
+                }
+            }
+
+            const tbody = document.getElementById("delivery-tbody");
+            if (!tbody) return;
+
+            if (this.pedidosDelivery.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding:1.5rem;">Nenhum pedido de delivery na fila para este filtro.<br><small>Compartilhe o link <strong>${window.location.origin}/pedir</strong> com seus clientes!</small></td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = this.pedidosDelivery
+                .map((p) => {
+                    const st = p.status_delivery || "Novo / Recebido";
+                    let badgeClass = "badge-warning";
+                    if (st === "Novo / Recebido") badgeClass = "badge-pink";
+                    else if (st === "Em Preparo") badgeClass = "badge-warning";
+                    else if (st.startsWith("Saiu p/ Entrega")) badgeClass = "badge-info";
+                    else if (st === "Entregue" || st === "Concluído") badgeClass = "badge-success";
+                    else if (st === "Cancelado") badgeClass = "badge-danger";
+
+                    const telDigits = String(p.cliente_telefone || "").replace(/\D/g, "");
+                    const waLink = telDigits
+                        ? `https://wa.me/55${telDigits}?text=${encodeURIComponent(`Olá ${p.cliente_nome || ""}! Aqui é da Sorveteria Cone Mágico 🍦 sobre seu pedido #${p.codigo_pedido} (${st}).`)}`
+                        : "";
+
+                    const endSafe = (p.endereco_entrega || "Retirada no Balcão").replace(/'/g, "\\'");
+                    const cliSafe = (p.cliente_nome || "Cliente").replace(/'/g, "\\'");
+                    const telSafe = (p.cliente_telefone || "").replace(/'/g, "\\'");
+
+                    return `
+                    <tr style="${st === "Novo / Recebido" ? "background:#fdf2f8;" : ""}">
+                        <td>
+                            <strong>#${p.codigo_pedido}</strong><br>
+                            <small style="color:#64748b;">${this.formatDateBR(p.data_venda)} às ${p.hora_venda}</small>
+                        </td>
+                        <td>
+                            <strong>${p.cliente_nome || "Cliente Online"}</strong><br>
+                            <small style="color:#64748b;">${p.cliente_telefone || "-"}</small>
+                            ${waLink ? `<br><a href="${waLink}" target="_blank" style="font-size:0.75rem; color:#16a34a; font-weight:700; text-decoration:none;">💬 Chamar no WhatsApp</a>` : ""}
+                        </td>
+                        <td>
+                            <span class="badge badge-neutral" style="margin-bottom:4px;">${p.modalidade_entrega || "99Entrega / Motoboy"}</span><br>
+                            <small style="color:#0f172a; font-weight:600;">${p.endereco_entrega || "Retirada no Balcão"}</small>
+                            ${p.entregador_info ? `<br><small style="color:#7c3aed; font-weight:700;">🛵 ${p.entregador_info}</small>` : ""}
+                            ${
+                                p.endereco_entrega && p.modalidade_entrega !== "Retirada no Balcão"
+                                    ? `<br><button type="button" class="btn btn-sm btn-secondary" style="margin-top:4px; font-size:0.72rem; padding:2px 8px;" onclick="App.copiarEndereco99('${endSafe}', '${cliSafe}', '${telSafe}')">📋 Copiar p/ 99Entrega</button>`
+                                    : ""
+                            }
+                        </td>
+                        <td>
+                            <strong>${p.itens_resumo}</strong>
+                            ${p.observacoes ? `<br><small style="color:#be185d;">Obs: ${p.observacoes}</small>` : ""}
+                        </td>
+                        <td>
+                            <span class="badge badge-info">${p.forma_pagamento}</span><br>
+                            <strong style="color:var(--primary);">${this.formatBRL(p.valor_total)}</strong>
+                            ${Number(p.taxa_entrega || 0) > 0 ? `<br><small style="color:#64748b;">(c/ frete ${this.formatBRL(p.taxa_entrega)})</small>` : ""}
+                            ${Number(p.troco_para || 0) > 0 ? `<br><small style="color:#b45309; font-weight:700;">Troco p/ ${this.formatBRL(p.troco_para)}</small>` : ""}
+                        </td>
+                        <td><span class="badge ${badgeClass}">${st}</span></td>
+                        <td>
+                            <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                                ${
+                                    st === "Novo / Recebido"
+                                        ? `<button class="btn btn-sm btn-primary" onclick="App.atualizarStatusDelivery(${p.id}, 'Em Preparo')">🍨 Preparar</button>`
+                                        : ""
+                                }
+                                ${
+                                    st === "Novo / Recebido" || st === "Em Preparo"
+                                        ? `<button class="btn btn-sm btn-secondary" style="border-color:#7c3aed; color:#7c3aed;" onclick="App.atualizarStatusDelivery(${p.id}, 'Saiu p/ Entrega (99Entrega)')">🛵 Despachar (99)</button>`
+                                        : ""
+                                }
+                                ${
+                                    st !== "Entregue" && st !== "Cancelado"
+                                        ? `<button class="btn btn-sm btn-secondary" style="border-color:#16a34a; color:#15803d;" onclick="App.atualizarStatusDelivery(${p.id}, 'Entregue')">✅ Entregue</button>`
+                                        : ""
+                                }
+                                <button class="btn btn-sm btn-secondary" onclick="App.emitirCupomDeliveryPorId(${p.id})">🧾 Comanda</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                })
+                .join("");
+        } catch (e) {
+            this.toast(e.message);
+        }
+    },
+
+    emitirCupomDeliveryPorId(id) {
+        const venda = (this.pedidosDelivery || []).find((v) => v.id === id);
+        if (venda) this.emitirCupomVenda(venda);
+    },
+
+    async atualizarStatusDelivery(id, novoStatus) {
+        let entregador_info = "";
+        if (novoStatus.startsWith("Saiu p/ Entrega")) {
+            const info = prompt(
+                "Informe o entregador / motorista da 99Entrega (opcional — o cliente verá no rastreamento):",
+                "99Entrega — Motoboy em rota"
+            );
+            if (info === null) return;
+            entregador_info = info.trim();
+        }
+        try {
+            const res = await this.api(`/api/delivery/${id}/status`, {
+                method: "PATCH",
+                body: JSON.stringify({ status_delivery: novoStatus, entregador_info }),
+            });
+            this.toast(res.mensagem);
+            await Promise.all([this.loadDelivery(), this.loadVendas()]);
             if (this.currentUser && this.currentUser.perfil === "admin") {
                 await this.loadDashboard();
             }
