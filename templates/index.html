@@ -86,6 +86,11 @@
                     <span>🛵</span> Delivery & Cardápio Online
                     <span class="badge-nav" id="nav-badge-delivery" style="background:#16a34a; color:#fff;">/pedir</span>
                 </button>
+
+                <button class="nav-btn" data-view="ifood" onclick="App.navigate('ifood')">
+                    <span style="font-size:1.05rem;">🔴</span> iFood
+                    <span class="badge-nav" style="background:#ea1d2c; color:#fff; font-weight:800; font-size:0.65rem;">Em breve</span>
+                </button>
                 <button class="nav-btn" data-view="cardapio" onclick="App.navigate('cardapio')">
                     <span>🍨</span> Cardápio & Sabores
                 </button>
@@ -482,6 +487,57 @@
                             </thead>
                             <tbody id="delivery-tbody"></tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2.6 VIEW: IFOOD (EM BREVE) -->
+            <section id="view-ifood" class="view-section" style="display:none;">
+                <div class="page-header">
+                    <div class="page-title">
+                        <div style="display:flex; align-items:center; gap:0.65rem;">
+                            <h2>🔴 Integração iFood</h2>
+                            <span class="badge" style="background:#ea1d2c; color:#fff; font-weight:800; font-size:0.75rem; padding:4px 10px;">Em breve</span>
+                        </div>
+                        <p>Conexão com a API do Portal do Parceiro iFood para receber pedidos direto na tela do caixa</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="App.navigate('delivery')">🛵 Ir para o Delivery Atual (/pedir)</button>
+                </div>
+
+                <div class="card" style="background:linear-gradient(135deg, #fff1f2 0%, #ffffff 100%); border:1px solid #fecdd3; padding:2rem;">
+                    <div style="max-width:750px;">
+                        <span style="font-size:2.5rem; display:block; margin-bottom:0.75rem;">🍨 🛵 🔴</span>
+                        <h3 style="font-size:1.35rem; color:#9f1239; margin-bottom:0.6rem; font-family:'Outfit', sans-serif;">
+                            Módulo de Integração com o iFood em Homologação
+                        </h3>
+                        <p style="font-size:0.95rem; color:#475569; line-height:1.6; margin-bottom:1.6rem;">
+                            Estamos desenvolvendo o conector oficial com a API de Desenvolvedor do iFood para a <strong>Sorveteria Cone Mágico</strong>. Com essa integração, você não precisará operar dois tablets separados: todos os pedidos do iFood cairão diretamente na fila do PDV da loja!
+                        </p>
+
+                        <div class="grid-2-equal" style="margin-bottom:1.6rem; gap:1rem;">
+                            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:1.25rem; box-shadow:var(--shadow-sm);">
+                                <strong style="color:#0f172a; font-size:1rem; display:block; margin-bottom:0.35rem;">📋 Sincronização em Tempo Real</strong>
+                                <p style="color:#64748b; font-size:0.85rem; line-height:1.45; margin:0;">
+                                    Altere o preço ou pause um sabor indisponível aqui no sistema e ele será pausado automaticamente na sua loja do iFood.
+                                </p>
+                            </div>
+                            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:1.25rem; box-shadow:var(--shadow-sm);">
+                                <strong style="color:#0f172a; font-size:1rem; display:block; margin-bottom:0.35rem;">🖨️ Despacho & Impressão de Comanda</strong>
+                                <p style="color:#64748b; font-size:0.85rem; line-height:1.45; margin:0;">
+                                    O pedido do cliente toca na tela do caixa, imprime a comanda na cozinha e aciona a chamada do motoboy parceiro do iFood.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:14px; padding:1.2rem 1.4rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <strong style="color:#0f172a; font-size:0.95rem;">💡 Dica: Aproveite seu Cardápio Digital Taxa Zero!</strong>
+                                <p style="font-size:0.84rem; color:#64748b; margin-top:0.25rem;">
+                                    Enquanto a integração com o iFood está em homologação, use o seu cardápio próprio em <code>/pedir</code> integrado à <strong>99Entrega</strong> onde você economiza até <strong>27% de comissões</strong>.
+                                </p>
+                            </div>
+                            <a href="/pedir" target="_blank" class="btn btn-secondary" style="font-size:0.85rem;">📱 Ver Cardápio /pedir ↗</a>
+                        </div>
                     </div>
                 </div>
             </section>
