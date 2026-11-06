@@ -1008,7 +1008,9 @@ def handle_public_consultar_pedido(codigo: str):
         SELECT v.id, v.codigo_pedido, v.data_venda, v.hora_venda, v.itens_resumo, v.itens_json,
                v.subtotal, v.taxa_entrega, v.valor_total, v.forma_pagamento, v.troco_para,
                v.modalidade_entrega, v.endereco_entrega, v.status, v.status_delivery,
-               v.entregador_info, v.observacoes,
+               v.entregador_info, v.link_rastreio_99, v.motoboy_lat, v.motoboy_lng, v.motoboy_atualizado_em,
+               COALESCE(v.loja_lat, -23.55052) as loja_lat, COALESCE(v.loja_lng, -46.633308) as loja_lng,
+               v.observacoes,
                COALESCE(c.nome, v.cliente_nome_avulso) as cliente_nome,
                COALESCE(c.telefone, v.cliente_telefone) as cliente_telefone,
                COALESCE(c.pontos_fidelidade, 0) as pontos_fidelidade
@@ -1082,6 +1084,7 @@ def handle_update_delivery_status(venda_id: int, body: dict, headers: dict):
     user = require_auth(headers)
     novo_status_del = (body.get("status_delivery") or "Em Preparo").strip()
     entregador_info = (body.get("entregador_info") or "").strip()
+    link_rastreio_99 = (body.get("link_rastreio_99") or "").strip()
     hoje = datetime.now().strftime("%Y-%m-%d")
 
     conn = get_connection()
@@ -1099,13 +1102,15 @@ def handle_update_delivery_status(venda_id: int, body: dict, headers: dict):
         status_venda = "Em Preparo"
 
     info_final = entregador_info if entregador_info else (venda["entregador_info"] or "")
+    link_final = link_rastreio_99 if link_rastreio_99 else (venda["link_rastreio_99"] or "")
+
     conn.execute(
         """
         UPDATE vendas SET
-            status_delivery = ?, status = ?, entregador_info = ?, funcionario_id = ?
+            status_delivery = ?, status = ?, entregador_info = ?, link_rastreio_99 = ?, funcionario_id = ?
         WHERE id = ?
         """,
-        (novo_status_del, status_venda, info_final, user["id"], venda_id),
+        (novo_status_del, status_venda, info_final, link_final, user["id"], venda_id),
     )
 
     if novo_status_del == "Entregue":
@@ -1121,7 +1126,78 @@ def handle_update_delivery_status(venda_id: int, body: dict, headers: dict):
     return {
         "id": venda_id,
         "status_delivery": novo_status_del,
+        "link_rastreio_99": link_final,
         "mensagem": f"Status do pedido #{venda['codigo_pedido']} atualizado para '{novo_status_del}'!",
+    }
+
+
+def handle_update_motoboy_gps(codigo: str, body: dict):
+    lat = float(body.get("lat") or 0.0)
+    lng = float(body.get("lng") or 0.0)
+    if not lat or not lng:
+        raise APIError("Coordenadas de latitude e longitude são obrigatórias.")
+
+    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entregador_info = (body.get("entregador_info") or "").strip()
+
+    conn = get_connection()
+    venda = conn.execute("SELECT id, codigo_pedido, entregador_info FROM vendas WHERE upper(codigo_pedido) = ?", (codigo.strip().upper(),)).fetchone()
+    if not venda:
+        conn.close()
+        raise APIError("Pedido não encontrado.", 404)
+
+    info_final = entregador_info if entregador_info else (venda["entregador_info"] or "Motoboy Conectado via GPS")
+    conn.execute(
+        """
+        UPDATE vendas SET
+            motoboy_lat = ?, motoboy_lng = ?, motoboy_atualizado_em = ?,
+            entregador_info = ?, status_delivery = CASE WHEN status_delivery = 'Novo / Recebido' THEN 'Saiu p/ Entrega (99Entrega)' ELSE status_delivery END
+        WHERE id = ?
+        """,
+        (lat, lng, agora, info_final, venda["id"]),
+    )
+    conn.commit()
+    conn.close()
+    return {
+        "status": "ok",
+        "codigo_pedido": venda["codigo_pedido"],
+        "lat": lat,
+        "lng": lng,
+        "atualizado_em": agora,
+        "mensagem": "Localização do motoboy transmitida em tempo real!",
+    }
+
+
+def handle_motoboy_concluir_entrega(codigo: str):
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    conn = get_connection()
+    venda = conn.execute(
+        "SELECT id, codigo_pedido FROM vendas WHERE upper(codigo_pedido) = ?",
+        (codigo.strip().upper(),),
+    ).fetchone()
+    if not venda:
+        conn.close()
+        raise APIError("Pedido não encontrado.", 404)
+
+    conn.execute(
+        """
+        UPDATE vendas SET
+            status_delivery = 'Entregue',
+            status = 'Concluída'
+        WHERE id = ?
+        """,
+        (venda["id"],),
+    )
+    conn.execute(
+        "UPDATE financeiro SET status_pagamento = 'Pago', data_pagamento = COALESCE(data_pagamento, ?) WHERE venda_id = ?",
+        (hoje, venda["id"]),
+    )
+    conn.commit()
+    conn.close()
+    return {
+        "status": "ok",
+        "mensagem": f"Pedido #{venda['codigo_pedido']} entregue com sucesso!",
+        "status_delivery": "Entregue",
     }
 
 
@@ -1483,6 +1559,12 @@ def dispatch_api(method: str, path: str, query: dict, body: dict, headers: dict)
     m_pub_ped = re.match(r"^/api/public/pedido/([A-Za-z0-9\-]+)$", path)
     if m_pub_ped and method == "GET":
         return handle_public_consultar_pedido(m_pub_ped.group(1))
+    m_pub_gps = re.match(r"^/api/public/pedido/([A-Za-z0-9\-]+)/gps$", path)
+    if m_pub_gps and method in ("POST", "PATCH"):
+        return handle_update_motoboy_gps(m_pub_gps.group(1), body)
+    m_pub_entregue = re.match(r"^/api/public/pedido/([A-Za-z0-9\-]+)/entregue$", path)
+    if m_pub_entregue and method in ("POST", "PATCH"):
+        return handle_motoboy_concluir_entrega(m_pub_entregue.group(1))
 
     # Central de Delivery & 99Entrega (Funcionário e Admin)
     if path == "/api/delivery" and method == "GET":
@@ -1549,6 +1631,17 @@ def wsgi_app(environ, start_response):
     if path.rstrip("/") == "/pedir" and method in ("GET", "HEAD"):
         pedir_path = os.path.join(BASE_DIR, "templates", "pedir.html")
         with open(pedir_path, "rb") as f:
+            content = f.read()
+        start_response(
+            "200 OK",
+            [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(content)))] + no_cache,
+        )
+        return [] if method == "HEAD" else [content]
+
+    # Servir Portal do Entregador / Motoboy GPS (/entregador ou /rota)
+    if path.rstrip("/") in ("/entregador", "/rota") and method in ("GET", "HEAD"):
+        entregador_path = os.path.join(BASE_DIR, "templates", "entregador.html")
+        with open(entregador_path, "rb") as f:
             content = f.read()
         start_response(
             "200 OK",

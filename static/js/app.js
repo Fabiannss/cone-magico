@@ -817,8 +817,21 @@ const App = {
                             <small style="color:#0f172a; font-weight:600;">${p.endereco_entrega || "Retirada no Balcão"}</small>
                             ${p.entregador_info ? `<br><small style="color:#7c3aed; font-weight:700;">🛵 ${p.entregador_info}</small>` : ""}
                             ${
+                                p.link_rastreio_99
+                                    ? `<br><a href="${p.link_rastreio_99}" target="_blank" class="badge" style="background:#f59e0b; color:#fff; text-decoration:none; margin-top:3px; display:inline-block;" title="Ver rastreio na 99">🗺️ Rastreio 99</a>`
+                                    : ""
+                            }
+                            ${
+                                p.motoboy_lat
+                                    ? `<span class="badge" style="background:#10b981; color:#fff; margin-top:3px; margin-left:2px; display:inline-block;" title="GPS Ativo: ${Number(p.motoboy_lat).toFixed(4)}, ${Number(p.motoboy_lng).toFixed(4)}">📡 GPS Ativo</span>`
+                                    : ""
+                            }
+                            ${
                                 p.endereco_entrega && p.modalidade_entrega !== "Retirada no Balcão"
-                                    ? `<br><button type="button" class="btn btn-sm btn-secondary" style="margin-top:4px; font-size:0.72rem; padding:2px 8px;" onclick="App.copiarEndereco99('${endSafe}', '${cliSafe}', '${telSafe}')">📋 Copiar p/ 99Entrega</button>`
+                                    ? `<div style="display:flex; gap:0.25rem; flex-wrap:wrap; margin-top:4px;">
+                                        <button type="button" class="btn btn-sm btn-secondary" style="font-size:0.72rem; padding:2px 8px;" onclick="App.copiarEndereco99('${endSafe}', '${cliSafe}', '${telSafe}')">📋 Copiar p/ 99</button>
+                                        <button type="button" class="btn btn-sm btn-secondary" style="font-size:0.72rem; padding:2px 8px;" onclick="App.copiarLinkMotoboy('${p.codigo_pedido}')">📱 Link Motoboy</button>
+                                       </div>`
                                     : ""
                             }
                         </td>
@@ -842,12 +855,17 @@ const App = {
                                 }
                                 ${
                                     st === "Novo / Recebido" || st === "Em Preparo"
-                                        ? `<button class="btn btn-sm btn-secondary" style="border-color:#7c3aed; color:#7c3aed;" onclick="App.atualizarStatusDelivery(${p.id}, 'Saiu p/ Entrega (99Entrega)')">🛵 Despachar (99)</button>`
+                                        ? `<button class="btn btn-sm btn-secondary" style="border-color:#7c3aed; color:#7c3aed; font-weight:700;" onclick="App.abrirModalDespacho(${p.id})">🛵 Despachar (99)</button>`
+                                        : ""
+                                }
+                                ${
+                                    st.startsWith("Saiu p/ Entrega")
+                                        ? `<button class="btn btn-sm btn-secondary" style="border-color:#7c3aed; color:#7c3aed;" onclick="App.abrirModalDespacho(${p.id})">✏️ Rastreio / 99</button>`
                                         : ""
                                 }
                                 ${
                                     st !== "Entregue" && st !== "Cancelado"
-                                        ? `<button class="btn btn-sm btn-secondary" style="border-color:#16a34a; color:#15803d;" onclick="App.atualizarStatusDelivery(${p.id}, 'Entregue')">✅ Entregue</button>`
+                                        ? `<button class="btn btn-sm btn-secondary" style="border-color:#16a34a; color:#15803d; font-weight:700;" onclick="App.atualizarStatusDelivery(${p.id}, 'Entregue')">✅ Entregue</button>`
                                         : ""
                                 }
                                 <button class="btn btn-sm btn-secondary" onclick="App.emitirCupomDeliveryPorId(${p.id})">🧾 Comanda</button>
@@ -866,20 +884,116 @@ const App = {
         if (venda) this.emitirCupomVenda(venda);
     },
 
+    abrirModalDespacho(id) {
+        const p = (this.pedidosDelivery || []).find((v) => v.id === id);
+        if (!p) return;
+
+        document.getElementById("despacho-venda-id").value = p.id;
+        document.getElementById("despacho-codigo-pedido").value = p.codigo_pedido;
+        document.getElementById("despacho-modal-subtitulo").innerText = `Pedido #${p.codigo_pedido} • ${this.formatDateBR(p.data_venda)} às ${p.hora_venda}`;
+
+        document.getElementById("despacho-dest-cliente").innerText = `${p.cliente_nome || "Cliente"} (${p.cliente_telefone || "Sem telefone"})`;
+        document.getElementById("despacho-dest-endereco").innerText = p.endereco_entrega || "Retirada no Balcão";
+
+        const btnCopiarDest = document.getElementById("despacho-btn-copiar-dest");
+        if (btnCopiarDest) {
+            btnCopiarDest.onclick = () => {
+                const textoDestino = `Pedido #${p.codigo_pedido}\nDestinatário: ${p.cliente_nome || "Cliente"}\nTelefone: ${p.cliente_telefone || ""}\nEndereço de Entrega: ${p.endereco_entrega || ""}\nTotal: ${this.formatBRL(p.valor_total)} (${p.forma_pagamento})`;
+                navigator.clipboard.writeText(textoDestino).then(() => {
+                    this.toast("Endereço e dados do pedido copiados para a 99!");
+                }).catch(() => {
+                    this.toast("Copie os dados manualmente.");
+                });
+            };
+        }
+
+        document.getElementById("despacho-entregador-info").value = p.entregador_info || "99Entrega — Motoboy em rota";
+        document.getElementById("despacho-link-99").value = p.link_rastreio_99 || "";
+
+        const baseUrl = window.location.origin;
+        const linkMotoboy = `${baseUrl}/entregador?codigo=${encodeURIComponent(p.codigo_pedido)}`;
+        document.getElementById("despacho-link-motoboy").value = linkMotoboy;
+
+        this.openModal("modal-despacho-delivery");
+    },
+
+    async colarLink99() {
+        try {
+            const texto = await navigator.clipboard.readText();
+            if (texto && texto.trim()) {
+                document.getElementById("despacho-link-99").value = texto.trim();
+                this.toast("Link da 99 colado com sucesso!");
+            } else {
+                this.toast("A área de transferência está vazia.");
+            }
+        } catch (e) {
+            this.toast("Cole manualmente com Ctrl+V no campo.");
+        }
+    },
+
+    copiarLinkMotoboyDespacho() {
+        const link = document.getElementById("despacho-link-motoboy").value;
+        if (!link) return;
+        navigator.clipboard.writeText(link).then(() => {
+            this.toast("Link de GPS do Motoboy copiado com sucesso!");
+        }).catch(() => {
+            prompt("Copie o link do motoboy:", link);
+        });
+    },
+
+    enviarLinkMotoboyWhatsApp() {
+        const cod = document.getElementById("despacho-codigo-pedido").value;
+        const link = document.getElementById("despacho-link-motoboy").value;
+        if (!link) return;
+        const msg = `Olá parceiro! 🛵 Aqui é da Sorveteria Cone Mágico. Segue a rota de entrega do pedido #${cod}:\n\nPor favor, acesse o link abaixo e clique em 'Iniciar Transmissão de GPS' para que o cliente acompanhe a sua chegada em tempo real no mapa:\n${link}\n\nObrigado e boa corrida! 🍦`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
+    },
+
+    copiarLinkMotoboy(codigoPedido) {
+        const baseUrl = window.location.origin;
+        const linkMotoboy = `${baseUrl}/entregador?codigo=${encodeURIComponent(codigoPedido)}`;
+        navigator.clipboard.writeText(linkMotoboy).then(() => {
+            this.toast(`Link GPS do Motoboy (#${codigoPedido}) copiado!`);
+        }).catch(() => {
+            prompt("Copie o link do motoboy:", linkMotoboy);
+        });
+    },
+
+    async confirmarDespachoEntrega() {
+        const id = Number(document.getElementById("despacho-venda-id").value);
+        const entregador_info = (document.getElementById("despacho-entregador-info").value || "").trim();
+        const link_rastreio_99 = (document.getElementById("despacho-link-99").value || "").trim();
+
+        if (!id) return;
+        try {
+            const res = await this.api(`/api/delivery/${id}/status`, {
+                method: "PATCH",
+                body: JSON.stringify({
+                    status_delivery: "Saiu p/ Entrega (99Entrega)",
+                    entregador_info: entregador_info || "99Entrega — Motoboy em rota",
+                    link_rastreio_99: link_rastreio_99
+                }),
+            });
+            this.toast(res.mensagem);
+            this.closeModal("modal-despacho-delivery");
+            await Promise.all([this.loadDelivery(), this.loadVendas()]);
+            if (this.currentUser && this.currentUser.perfil === "admin") {
+                await this.loadDashboard();
+            }
+        } catch (e) {
+            this.toast(e.message);
+        }
+    },
+
     async atualizarStatusDelivery(id, novoStatus) {
-        let entregador_info = "";
         if (novoStatus.startsWith("Saiu p/ Entrega")) {
-            const info = prompt(
-                "Informe o entregador / motorista da 99Entrega (opcional — o cliente verá no rastreamento):",
-                "99Entrega — Motoboy em rota"
-            );
-            if (info === null) return;
-            entregador_info = info.trim();
+            this.abrirModalDespacho(id);
+            return;
         }
         try {
             const res = await this.api(`/api/delivery/${id}/status`, {
                 method: "PATCH",
-                body: JSON.stringify({ status_delivery: novoStatus, entregador_info }),
+                body: JSON.stringify({ status_delivery: novoStatus }),
             });
             this.toast(res.mensagem);
             await Promise.all([this.loadDelivery(), this.loadVendas()]);
@@ -2347,8 +2461,14 @@ const App = {
         }
     },
 
+    openModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add("open");
+    },
+
     closeModal(id) {
-        document.getElementById(id).classList.remove("open");
+        const el = document.getElementById(id);
+        if (el) el.classList.remove("open");
     },
 };
 

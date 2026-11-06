@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Painel do Entregador GPS | Cone Mágico</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=5">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #db2777;
+            --primary-dark: #9d174d;
+            --secondary: #7c3aed;
+            --bg: #090d16;
+            --surface: #131b2e;
+            --surface-card: #1c2640;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: #283556;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #be185d 0%, #6d28d9 100%);
+            border-radius: 20px;
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: 0 10px 25px -5px rgba(219, 39, 119, 0.35);
+        }
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .header p {
+            font-size: 0.82rem;
+            color: #fce7f3;
+            margin-top: 0.2rem;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 1.25rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-live {
+            background: rgba(16, 185, 129, 0.18);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+        }
+        .badge-off {
+            background: rgba(148, 163, 184, 0.15);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #94a3b8;
+        }
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.85rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-gps-start {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+        .btn-gps-stop {
+            background: #ef4444;
+            color: #fff;
+        }
+        .btn-waze {
+            background: #334155;
+            color: #fff;
+            border: 1px solid #475569;
+        }
+        .btn-wa {
+            background: #25d366;
+            color: #0f172a;
+        }
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse 1.6s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .input-code {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface-card);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span style="font-size:2rem; display:block; margin-bottom:0.2rem;">🛵</span>
+            <h1>CONE MÁGICO — GPS MOTOBOY</h1>
+            <p>Transmissão da rota ao vivo direto para a tela do cliente</p>
+        </div>
+
+        <div class="card" id="card-busca">
+            <label style="font-size:0.8rem; font-weight:700; color:var(--muted); display:block; margin-bottom:0.4rem;">CÓDIGO DO PEDIDO</label>
+            <div style="display:flex; gap:0.5rem;">
+                <input type="text" id="cod-input" class="input-code" placeholder="EX: DEL-2005">
+                <button type="button" class="btn" style="width:auto; padding:0 1.2rem; background:var(--primary);" onclick="EntregadorApp.carregarPedido()">Buscar</button>
+            </div>
+        </div>
+
+        <div id="card-detalhes" class="card" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem;">
+                <strong style="font-size:1.15rem; color:#f472b6;" id="info-cod">#DEL-2005</strong>
+                <span class="badge badge-off" id="gps-status-badge">GPS Desconectado</span>
+            </div>
+
+            <div style="background:var(--surface-card); border-radius:12px; padding:0.9rem; margin-bottom:1rem; font-size:0.88rem;">
+                <div style="margin-bottom:0.4rem;">
+                    <span style="color:var(--muted);">Cliente:</span> <strong id="info-cliente">-</strong>
+                </div>
+                <div style="margin-bottom:0.4rem;">
+                    <span style="color:var(--muted);">Destino:</span> <strong id="info-endereco" style="color:#fde047;">-</strong>
+                </div>
+                <div style="margin-bottom:0.4rem;">
+                    <span style="color:var(--muted);">Itens:</span> <span id="info-itens">-</span>
+                </div>
+                <div>
+                    <span style="color:var(--muted);">Cobrar na Entrega:</span> <strong id="info-total" style="color:#34d399;">-</strong>
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:0.6rem;">
+                <button type="button" class="btn btn-gps-start" id="btn-toggle-gps" onclick="EntregadorApp.toggleGPS()">
+                    📡 Iniciar Transmissão de GPS ao Cliente
+                </button>
+                <a href="#" id="link-waze" target="_blank" class="btn btn-waze">
+                    🗺️ Abrir Rota no Google Maps / Waze
+                </a>
+                <a href="#" id="link-wa" target="_blank" class="btn btn-wa">
+                    💬 Chamar Cliente no WhatsApp
+                </a>
+                <button type="button" class="btn" style="background:#10b981; color:#fff;" onclick="EntregadorApp.marcarEntregue()">
+                    ✅ Confirmar Entrega Realizada
+                </button>
+            </div>
+
+            <div id="gps-log" style="font-size:0.75rem; color:var(--muted); text-align:center; margin-top:0.8rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        const EntregadorApp = {
+            watchId: null,
+            pedido: null,
+            codigo: "",
+
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const cod = urlParams.get("codigo") || urlParams.get("id") || "";
+                if (cod) {
+                    document.getElementById("cod-input").value = cod;
+                    this.carregarPedido(cod);
+                }
+            },
+
+            async carregarPedido(codigoParam) {
+                const cod = (codigoParam || document.getElementById("cod-input").value || "").trim().toUpperCase();
+                if (!cod) return;
+                this.codigo = cod;
+                try {
+                    const res = await fetch(`/api/public/pedido/${encodeURIComponent(cod)}`);
+                    const p = await res.json();
+                    if (!res.ok) throw new Error(p.erro || "Pedido não encontrado");
+                    this.pedido = p;
+
+                    document.getElementById("card-detalhes").style.display = "block";
+                    document.getElementById("info-cod").textContent = `#${p.codigo_pedido}`;
+                    document.getElementById("info-cliente").textContent = `${p.cliente_nome || "Cliente"} (${p.cliente_telefone || ""})`;
+                    document.getElementById("info-endereco").textContent = p.endereco_entrega || "Retirada no Balcão";
+                    document.getElementById("info-itens").textContent = p.itens_resumo || "-";
+                    document.getElementById("info-total").textContent = `R$ ${Number(p.valor_total || 0).toFixed(2)} (${p.forma_pagamento})`;
+
+                    if (p.endereco_entrega) {
+                        document.getElementById("link-waze").href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.endereco_entrega)}`;
+                    }
+                    if (p.cliente_telefone) {
+                        const digits = p.cliente_telefone.replace(/\D/g, "");
+                        document.getElementById("link-wa").href = `https://wa.me/55${digits}?text=${encodeURIComponent(`Olá! Sou o entregador da Sorveteria Cone Mágico sobre o pedido #${p.codigo_pedido}.`)}`;
+                    }
+                } catch (e) {
+                    alert(e.message);
+                }
+            },
+
+            toggleGPS() {
+                if (this.watchId) {
+                    navigator.geolocation.clearWatch(this.watchId);
+                    this.watchId = null;
+                    document.getElementById("btn-toggle-gps").textContent = "📡 Iniciar Transmissão de GPS ao Cliente";
+                    document.getElementById("btn-toggle-gps").className = "btn btn-gps-start";
+                    document.getElementById("gps-status-badge").className = "badge badge-off";
+                    document.getElementById("gps-status-badge").textContent = "GPS Pausado";
+                    document.getElementById("gps-log").textContent = "Transmissão pausada.";
+                    return;
+                }
+
+                if (!navigator.geolocation) {
+                    alert("Seu navegador não tem suporte a GPS.");
+                    return;
+                }
+
+                document.getElementById("gps-log").textContent = "Solicitando permissão de GPS no celular...";
+                this.watchId = navigator.geolocation.watchPosition(
+                    (pos) => this.enviarCoordenadas(pos.coords.latitude, pos.coords.longitude),
+                    (err) => {
+                        alert("Não foi possível acessar o GPS: " + err.message);
+                        this.toggleGPS();
+                    },
+                    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+                );
+
+                document.getElementById("btn-toggle-gps").textContent = "⏸️ Pausar Transmissão de GPS";
+                document.getElementById("btn-toggle-gps").className = "btn btn-gps-stop";
+                document.getElementById("gps-status-badge").className = "badge badge-live";
+                document.getElementById("gps-status-badge").innerHTML = `<span class="pulse-dot"></span> Transmitindo Ao Vivo`;
+            },
+
+            async enviarCoordenadas(lat, lng) {
+                if (!this.codigo) return;
+                try {
+                    await fetch(`/api/public/pedido/${encodeURIComponent(this.codigo)}/gps`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ lat, lng, entregador_info: "Motoboy Online (GPS Ativo)" }),
+                    });
+                    const hora = new Date().toLocaleTimeString("pt-BR");
+                    document.getElementById("gps-log").textContent = `Localização enviada às ${hora} (Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)})`;
+                } catch (e) {
+                    console.error("Erro ao enviar GPS:", e);
+                }
+            },
+
+            async marcarEntregue() {
+                if (!confirm("Confirmar que o pedido foi entregue ao cliente?")) return;
+                try {
+                    if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+                    const res = await fetch(`/api/public/pedido/${encodeURIComponent(this.codigo)}/entregue`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" }
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.erro || "Falha ao registrar entrega");
+                    alert(data.mensagem || "Pedido marcado como Entregue com sucesso! Bom trabalho!");
+                    window.location.reload();
+                } catch (e) {
+                    alert("Erro ao confirmar entrega: " + e.message);
+                }
+            }
+        };
+
+        window.addEventListener("DOMContentLoaded", () => EntregadorApp.init());
+    </script>
+</body>
+</html>

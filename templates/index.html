@@ -1306,6 +1306,79 @@
         </div>
     </div>
 
+    <!-- MODAL: DESPACHO 99ENTREGA / MOTOBOY COM RASTREIO GPS AO VIVO -->
+    <div class="modal-backdrop" id="modal-despacho-delivery">
+        <div class="modal" style="max-width:580px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="display:flex; align-items:center; gap:0.5rem; margin:0;">
+                        <span>🛵</span> Despachar Pedido & Rastreio ao Vivo
+                    </h3>
+                    <small style="color:#64748b;" id="despacho-modal-subtitulo">Pedido #DEL-0000</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="App.closeModal('modal-despacho-delivery')">✕</button>
+            </div>
+            <form id="form-despacho-delivery" onsubmit="event.preventDefault(); App.confirmarDespachoEntrega();">
+                <input type="hidden" id="despacho-venda-id">
+                <input type="hidden" id="despacho-codigo-pedido">
+
+                <!-- DETALHES DO DESTINO -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.85rem; margin-bottom:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                        <div>
+                            <strong style="color:#0f172a; font-size:0.95rem;" id="despacho-dest-cliente">Cliente</strong>
+                            <div style="font-size:0.82rem; color:#475569; margin-top:0.2rem;" id="despacho-dest-endereco">Endereço de entrega</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-secondary" id="despacho-btn-copiar-dest" style="font-size:0.75rem; white-space:nowrap;">
+                            📋 Copiar Destino
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 1. IDENTIFICAÇÃO DO MOTOBOY / VEÍCULO -->
+                <div class="form-group">
+                    <label>Identificação do Entregador / Empresa</label>
+                    <input type="text" id="despacho-entregador-info" class="form-control" placeholder="Ex: 99Entrega - Motoboy Carlos (Honda Fan 160)">
+                    <small style="color:#64748b;">Esse nome aparece no rastreamento em tempo real do cliente.</small>
+                </div>
+
+                <!-- 2. LINK DE RASTREIO 99ENTREGA (OPCIONAL) -->
+                <div class="form-group" style="background:#fffbeb; border:1px solid #fef3c7; border-radius:10px; padding:0.85rem;">
+                    <label style="color:#92400e; font-weight:700; display:flex; align-items:center; gap:0.4rem;">
+                        <span>🟡</span> Link de Rastreio da 99Entrega (Opcional)
+                    </label>
+                    <div style="display:flex; gap:0.5rem; margin-top:0.35rem;">
+                        <input type="url" id="despacho-link-99" class="form-control" placeholder="Cole o link da corrida gerado na 99 (ex: https://d.didiglobal.com/...)">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="App.colarLink99()" title="Colar da área de transferência">📋 Colar</button>
+                    </div>
+                    <small style="color:#78350f;">Se colado, o cliente terá o botão <strong>'🗺️ Acompanhar Corrida ao Vivo no App da 99'</strong> na tela de status.</small>
+                </div>
+
+                <!-- 3. LINK DE GPS DO MOTOBOY PRÓPRIO -->
+                <div class="form-group" style="background:#f5f3ff; border:1px solid #ede9fe; border-radius:10px; padding:0.85rem;">
+                    <label style="color:#5b21b6; font-weight:700; display:flex; align-items:center; gap:0.4rem;">
+                        <span>📡</span> Rastreio GPS em Tempo Real Próprio (Para o Motoboy da Loja)
+                    </label>
+                    <div style="font-size:0.8rem; color:#4c1d95; margin-bottom:0.4rem;">
+                        Envie este link para o smartphone do entregador. Ao clicar em <strong>'Transmitir GPS'</strong>, a moto 🛵 se moverá ao vivo no mapa do cliente!
+                    </div>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <input type="text" id="despacho-link-motoboy" class="form-control" readonly style="flex:1; min-width:200px; font-size:0.8rem; background:#fff; font-family:monospace;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="App.copiarLinkMotoboyDespacho()">📋 Copiar Link</button>
+                        <button type="button" class="btn btn-sm" style="background:#16a34a; color:#fff;" onclick="App.enviarLinkMotoboyWhatsApp()">💬 Zap Motoboy</button>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1rem;">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-despacho-delivery')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg, #7c3aed 0%, #be185d 100%); border:none; padding:0.65rem 1.4rem;">
+                        🚀 Confirmar Saída p/ Entrega
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
     <script src="/static/js/app.js?v=4"></script>
 </body>

@@ -311,6 +311,12 @@ def init_db():
         entregador_info TEXT,
         cliente_telefone TEXT,
         cliente_nome_avulso TEXT,
+        link_rastreio_99 TEXT,
+        motoboy_lat REAL,
+        motoboy_lng REAL,
+        motoboy_atualizado_em TEXT,
+        loja_lat REAL DEFAULT -23.55052,
+        loja_lng REAL DEFAULT -46.633308,
         criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL,
         FOREIGN KEY (funcionario_id) REFERENCES usuarios(id)
@@ -327,6 +333,12 @@ def init_db():
         ("entregador_info", "TEXT"),
         ("cliente_telefone", "TEXT"),
         ("cliente_nome_avulso", "TEXT"),
+        ("link_rastreio_99", "TEXT"),
+        ("motoboy_lat", "REAL"),
+        ("motoboy_lng", "REAL"),
+        ("motoboy_atualizado_em", "TEXT"),
+        ("loja_lat", "REAL DEFAULT -23.55052"),
+        ("loja_lng", "REAL DEFAULT -46.633308"),
     ]
     for col_name, col_def in novas_colunas_vendas:
         try:
