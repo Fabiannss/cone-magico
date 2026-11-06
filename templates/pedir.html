@@ -14,23 +14,23 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         :root {
-            --primary: #e11d48;
-            --primary-hover: #be123c;
-            --primary-dark: #9f1239;
-            --primary-light: #fff1f2;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --primary-dark: #075985;
+            --primary-light: #e0f2fe;
             --caramel: #d97706;
             --secondary: #b45309;
             --accent: #059669;
-            --bg: #faf7f2;
+            --bg: #f8fafc;
             --surface: #ffffff;
             --surface-elevated: #ffffff;
-            --text-main: #1c1917;
-            --text-muted: #78716c;
-            --border: #ede6dc;
-            --border-hover: #fecdd3;
-            --shadow-sm: 0 1px 3px rgba(35, 18, 10, 0.04), 0 2px 6px rgba(35, 18, 10, 0.03);
-            --shadow-md: 0 8px 24px rgba(225, 29, 72, 0.12), 0 2px 6px rgba(35, 18, 10, 0.04);
-            --shadow-lg: 0 20px 40px -10px rgba(28, 19, 14, 0.25);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --border-hover: #bae6fd;
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.03);
+            --shadow-md: 0 8px 24px rgba(2, 132, 199, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+            --shadow-lg: 0 20px 40px -10px rgba(15, 23, 42, 0.25);
             --radius-md: 16px;
             --radius-lg: 24px;
         }
@@ -53,11 +53,11 @@
 
         /* Top Navigation Header */
         .site-header {
-            background: linear-gradient(135deg, #be123c 0%, #881337 40%, #1c130e 100%);
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 45%, #0f172a 100%);
             color: #ffffff;
             padding: 1.5rem 1.25rem 2.2rem;
             position: relative;
-            box-shadow: 0 4px 20px rgba(131, 24, 67, 0.2);
+            box-shadow: 0 4px 20px rgba(2, 132, 199, 0.25);
         }
 
         .header-container {
@@ -1250,7 +1250,7 @@
                     // Ícones Customizados
                     const iconLoja = L.divIcon({
                         className: 'custom-pin',
-                        html: '<div style="background:#ffffff; border:2px solid #db2777; border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 10px rgba(0,0,0,0.25);">🍦</div>',
+                        html: '<div style="background:#ffffff; border:2px solid #0284c7; border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 10px rgba(0,0,0,0.25);">🍦</div>',
                         iconSize: [34, 34],
                         iconAnchor: [17, 17]
                     });
@@ -1266,8 +1266,8 @@
                         className: 'custom-pin',
                         html: `
                             <div class="pulse-marker-wrapper">
-                                <div class="pulse-ring"></div>
-                                <div style="background:#db2777; color:#fff; border:2px solid #ffffff; border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 6px 14px rgba(219,39,119,0.5);">🛵</div>
+                                <div class="pulse-ring" style="background:#38bdf8;"></div>
+                                <div style="background:#0284c7; color:#fff; border:2px solid #ffffff; border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 6px 14px rgba(2,132,199,0.5);">🛵</div>
                             </div>
                         `,
                         iconSize: [44, 44],
@@ -1280,9 +1280,9 @@
 
                     // Linha da rota tracejada
                     this.routeLine = L.polyline([[lojaLat, lojaLng], [destLat, destLng]], {
-                        color: '#db2777',
+                        color: '#0284c7',
                         weight: 4,
-                        opacity: 0.75,
+                        opacity: 0.8,
                         dashArray: '8, 8'
                     }).addTo(this.leafletMap);
 
