@@ -5,31 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cone Mágico | Cardápio Digital & Delivery</title>
     <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=6">
-    <!-- Google Fonts: Plus Jakarta Sans -->
+    <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Leaflet.js para Mapa GPS Ao Vivo do Motoboy -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         :root {
-            --primary: #db2777;
-            --primary-hover: #be185d;
-            --primary-dark: #9d174d;
-            --primary-light: #fdf2f8;
-            --secondary: #7c3aed;
-            --accent: #f59e0b;
-            --bg: #fafafa;
+            --primary: #e11d48;
+            --primary-hover: #be123c;
+            --primary-dark: #9f1239;
+            --primary-light: #fff1f2;
+            --caramel: #d97706;
+            --secondary: #b45309;
+            --accent: #059669;
+            --bg: #faf7f2;
             --surface: #ffffff;
             --surface-elevated: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border: #f1f5f9;
-            --border-hover: #fbcfe8;
-            --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.04);
-            --shadow-md: 0 10px 25px -5px rgba(219, 39, 119, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-            --shadow-lg: 0 20px 35px -10px rgba(15, 23, 42, 0.2);
+            --text-main: #1c1917;
+            --text-muted: #78716c;
+            --border: #ede6dc;
+            --border-hover: #fecdd3;
+            --shadow-sm: 0 1px 3px rgba(35, 18, 10, 0.04), 0 2px 6px rgba(35, 18, 10, 0.03);
+            --shadow-md: 0 8px 24px rgba(225, 29, 72, 0.12), 0 2px 6px rgba(35, 18, 10, 0.04);
+            --shadow-lg: 0 20px 40px -10px rgba(28, 19, 14, 0.25);
             --radius-md: 16px;
             --radius-lg: 24px;
         }
@@ -46,9 +47,13 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        h1, h2, h3, h4, h5, h6, .brand-info h1, .cart-bar-total, .product-price {
+            font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+        }
+
         /* Top Navigation Header */
         .site-header {
-            background: linear-gradient(135deg, #831843 0%, #4c1d95 60%, #1e1b4b 100%);
+            background: linear-gradient(135deg, #be123c 0%, #881337 40%, #1c130e 100%);
             color: #ffffff;
             padding: 1.5rem 1.25rem 2.2rem;
             position: relative;
