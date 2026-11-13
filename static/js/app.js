@@ -344,11 +344,30 @@ const App = {
         this.renderCarrinhoPDV();
     },
 
+    renderCategoriasPDV() {
+        const box = document.getElementById("pdv-cat-pills");
+        if (!box) return;
+        const cats = [...new Set(this.produtos.filter((p) => p.disponivel).map((p) => p.categoria))].sort(
+            (a, b) => ConeIlustra.ordemCategoria(a) - ConeIlustra.ordemCategoria(b)
+        );
+        if (this.categoriaPDV && !cats.includes(this.categoriaPDV)) this.categoriaPDV = "";
+        box.innerHTML =
+            `<button type="button" class="pdv-cat-pill ${this.categoriaPDV ? "" : "active"}" data-cat="">Todos</button>` +
+            cats
+                .map(
+                    (c) =>
+                        `<button type="button" class="pdv-cat-pill ${this.categoriaPDV === c ? "active" : ""}" data-cat="${c}" style="display:inline-flex; align-items:center; gap:0.4rem;">${ConeIlustra.categoria(c, 24)}${ConeIlustra.nomeCategoria(c)}</button>`
+                )
+                .join("");
+        box.querySelectorAll(".pdv-cat-pill").forEach((btn) => {
+            btn.addEventListener("click", () => this.setCategoriaPDV(btn.dataset.cat || ""));
+        });
+    },
+
     setCategoriaPDV(cat) {
         this.categoriaPDV = cat;
         document.querySelectorAll("#pdv-cat-pills .pdv-cat-pill").forEach((btn) => {
-            const btnText = btn.getAttribute("onclick") || "";
-            btn.classList.toggle("active", btnText.includes(`'${cat}'`));
+            btn.classList.toggle("active", (btn.dataset.cat || "") === cat);
         });
         this.renderCatalogoPDV();
     },
@@ -356,6 +375,7 @@ const App = {
     renderCatalogoPDV() {
         const grid = document.getElementById("pdv-products-grid");
         if (!grid) return;
+        this.renderCategoriasPDV();
         const busca = (document.getElementById("pdv-busca-produto")?.value || "").toLowerCase().trim();
 
         const disponiveis = this.produtos.filter((p) => {
@@ -382,7 +402,7 @@ const App = {
                 (p) => `
             <button type="button" class="pdv-product-card" onclick="App.adicionarAoCarrinhoPDV(${p.id})">
                 <div>
-                    <div class="prod-cat">${p.categoria}</div>
+                    <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.35rem;">${ConeIlustra.produto(p, 44)}<div class="prod-cat" style="margin:0;">${ConeIlustra.nomeCategoria(p.categoria)}</div></div>
                     <div class="prod-name">${p.nome}</div>
                     <div class="prod-desc">${p.sabor_detalhe || "Sorveteria Cone Mágico"}</div>
                 </div>
