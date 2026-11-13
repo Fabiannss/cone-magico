@@ -373,8 +373,33 @@ def init_db():
     conn.commit()
     seed_initial_data(conn)
     ensure_default_users(conn)
+    migrar_categorias_novas(conn)
     conn.close()
     _DB_INITIALIZED = True
+
+
+def migrar_categorias_novas(conn):
+    """Move açaí/cupuaçu e água para as categorias próprias, uma única vez.
+
+    Só roda enquanto nenhum produto usa as categorias novas, para não desfazer
+    uma escolha que o dono faça depois pelo painel.
+    """
+    try:
+        ja_tem = conn.execute(
+            "SELECT COUNT(*) as total FROM produtos WHERE categoria IN ('Açaí e Cupuaçu', 'Bebidas')"
+        ).fetchone()
+        if ja_tem and ja_tem["total"] > 0:
+            return
+        conn.execute(
+            "UPDATE produtos SET categoria = 'Açaí e Cupuaçu' "
+            "WHERE categoria = 'Taças Especiais' AND (nome LIKE 'Açaí%' OR nome LIKE 'Cupuaçu%')"
+        )
+        conn.execute(
+            "UPDATE produtos SET categoria = 'Bebidas' WHERE categoria = 'Adicional / Calda' AND nome LIKE 'Água%'"
+        )
+        conn.commit()
+    except Exception as exc:  # nunca impedir o sistema de subir por causa disso
+        print(f"Aviso: migração de categorias não aplicada: {exc}")
 
 
 def ensure_default_users(conn):

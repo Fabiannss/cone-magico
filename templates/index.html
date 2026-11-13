@@ -261,16 +261,7 @@
                             <input type="text" id="pdv-busca-produto" class="form-control" style="max-width:240px;" placeholder="🔍 Buscar sabor ou item..." oninput="App.renderCatalogoPDV()">
                         </div>
 
-                        <div class="pdv-cat-pills" id="pdv-cat-pills">
-                            <button type="button" class="pdv-cat-pill active" onclick="App.setCategoriaPDV('')">Todos</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Casquinha / Cascão')">🍦 Casquinhas & Cascões</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Copo / Sundae')">🍨 Copos & Sundaes</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Taças Especiais')">🍧 Taças Especiais</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Milkshake')">🥤 Milkshakes</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Picolé')">🍡 Picolés</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Pote / Viagem')">🥡 Potes 2L</button>
-                            <button type="button" class="pdv-cat-pill" onclick="App.setCategoriaPDV('Adicional / Calda')">🍫 Adicionais & Caldas</button>
-                        </div>
+                        <div class="pdv-cat-pills" id="pdv-cat-pills"></div>
 
                         <div id="pdv-products-grid" class="pdv-products-grid"></div>
                     </div>
@@ -561,6 +552,8 @@
                                 <option value="Taças Especiais">Taças Especiais</option>
                                 <option value="Milkshake">Milkshake</option>
                                 <option value="Picolé">Picolé</option>
+                                <option value="Açaí e Cupuaçu">Açaí e Cupuaçu</option>
+                                <option value="Bebidas">Bebidas</option>
                                 <option value="Pote / Viagem">Pote / Viagem</option>
                                 <option value="Adicional / Calda">Adicional / Calda</option>
                             </select>
@@ -1065,6 +1058,8 @@
                             <option value="Taças Especiais">Taças Especiais</option>
                             <option value="Milkshake">Milkshake</option>
                             <option value="Picolé">Picolé</option>
+                                <option value="Açaí e Cupuaçu">Açaí e Cupuaçu</option>
+                                <option value="Bebidas">Bebidas</option>
                             <option value="Pote / Viagem">Pote / Viagem</option>
                             <option value="Adicional / Calda">Adicional / Calda</option>
                         </select>
@@ -1433,6 +1428,7 @@
     </div>
 
     <div id="toast" class="toast"></div>
-    <script src="/static/js/app.js?v=4"></script>
+    <script src="/static/js/ilustracoes.js?v=1"></script>
+    <script src="/static/js/app.js?v=5"></script>
 </body>
 </html>
