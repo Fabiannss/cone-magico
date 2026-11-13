@@ -214,6 +214,7 @@
             init() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const cod = urlParams.get("codigo") || urlParams.get("id") || "";
+                this.token = urlParams.get("t") || "";
                 if (cod) {
                     document.getElementById("cod-input").value = cod;
                     this.carregarPedido(cod);
@@ -225,7 +226,7 @@
                 if (!cod) return;
                 this.codigo = cod;
                 try {
-                    const res = await fetch(`/api/public/pedido/${encodeURIComponent(cod)}`);
+                    const res = await fetch(`/api/public/pedido/${encodeURIComponent(cod)}?t=${encodeURIComponent(this.token || "")}`);
                     const p = await res.json();
                     if (!res.ok) throw new Error(p.erro || "Pedido não encontrado");
                     this.pedido = p;
@@ -288,7 +289,7 @@
                     await fetch(`/api/public/pedido/${encodeURIComponent(this.codigo)}/gps`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ lat, lng, entregador_info: "Motoboy Online (GPS Ativo)" }),
+                        body: JSON.stringify({ lat, lng, entregador_info: "Motoboy Online (GPS Ativo)", token: this.token || "" }),
                     });
                     const hora = new Date().toLocaleTimeString("pt-BR");
                     document.getElementById("gps-log").textContent = `Localização enviada às ${hora} (Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)})`;
@@ -303,7 +304,8 @@
                     if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
                     const res = await fetch(`/api/public/pedido/${encodeURIComponent(this.codigo)}/entregue`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" }
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ token: this.token || "" })
                     });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.erro || "Falha ao registrar entrega");

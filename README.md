@@ -4,12 +4,11 @@ Aplicação Web completa em **Python + SQLite** (zero dependências externas, co
 
 ---
 
-## 🔐 Credenciais de Acesso (2 Perfis Configurados)
+## 🔐 Acesso
 
-| Perfil | Usuário / Login | Senha | Permissões no Sistema |
-|---|---|---|---|
-| **👑 ADMIN (Dono)** | `admin` | `123456` | **Acesso Total**: Painel Geral (KPIs do dia/mês), PDV, Cardápio & Preços, Estoque, Clientes/Fidelidade, Financeiro Completo, Dashboard Gráfico (Pizza/Barras), Fluxo de Caixa & Balancete Simples, Despesas da Sorveteria e Gestão de Equipe. |
-| **🍦 FUNCIONÁRIO (Caixa)** | `funcionario` (ou `lucas`) | `123456` | **Acesso Operacional**: PDV / Frente de Caixa Rápido, Emissão de Cupom, Lançamento Rápido de Caixa (**Sangria / Despesa de Balcão e Suprimento/Troco**), Cardápio (ativar/pausar sabores), Estoque (entrada/baixa de insumos) e Clientes/Programa Fidelidade. *(Sem acesso aos relatórios de lucro, balancete ou despesas gerais do Admin).* |
+O sistema tem dois perfis: **ADMIN (Dono)**, com acesso total, e **FUNCIONÁRIO (Caixa)**, com acesso operacional (PDV, caixa rápido, cardápio, estoque e clientes, sem relatórios de lucro).
+
+As senhas não ficam neste repositório. Troque as senhas iniciais em **Equipe** logo após o primeiro acesso.
 
 ---
 
