@@ -752,6 +752,11 @@
         .cart-float-label { flex: 1; font-size: 1rem; font-weight: 700; color: #ffffff; }
         .cart-float-bar strong { font-family: 'Outfit', sans-serif; font-size: 1.12rem; font-weight: 700; color: #ffffff; }
         .cart-product-row { gap: 0.6rem; }
+        .cart-item-nome { display: block; font-size: 0.9rem; font-weight: 600; line-height: 1.3; color: #0f172a; }
+        .cart-item-valor { display: block; font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 700; color: #0369a1; }
+        .cart-item-valor small { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.76rem; font-weight: 500; color: #64748b; }
+        .qty-controller { flex-shrink: 0; }
+        .btn-qty-mini { width: 40px; height: 40px; border-radius: 50%; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -1098,16 +1103,13 @@
                     <div class="cart-product-row">
                         ${ConeIlustra.produto(it, 40)}
                         <div style="flex:1; min-width:0;">
-                            <strong>${it.nome}</strong><br>
-                            <small style="color:#64748b;">${this.formatBRL(it.preco)} cada</small>
+                            <span class="cart-item-nome">${it.nome}</span>
+                            <span class="cart-item-valor">${this.formatBRL(it.preco * it.qtd)}${it.qtd > 1 ? ` <small>(${this.formatBRL(it.preco)} cada)</small>` : ""}</span>
                         </div>
                         <div class="qty-controller">
-                            <button type="button" class="btn-qty-mini" onclick="ClienteApp.alterarQuantidadeItem(${idx}, -1)">-</button>
+                            <button type="button" class="btn-qty-mini" aria-label="Diminuir ${it.nome}" onclick="ClienteApp.alterarQuantidadeItem(${idx}, -1)">−</button>
                             <span style="font-weight:800; min-width:20px; text-align:center;">${it.qtd}</span>
-                            <button type="button" class="btn-qty-mini" onclick="ClienteApp.alterarQuantidadeItem(${idx}, 1)">+</button>
-                        </div>
-                        <div style="min-width:75px; text-align:right; font-weight:800;">
-                            ${this.formatBRL(it.preco * it.qtd)}
+                            <button type="button" class="btn-qty-mini" aria-label="Aumentar ${it.nome}" onclick="ClienteApp.alterarQuantidadeItem(${idx}, 1)">+</button>
                         </div>
                     </div>
                 `).join("");
