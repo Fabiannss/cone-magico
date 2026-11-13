@@ -1,8 +1,12 @@
+import hashlib
+import hmac
 import json
 import mimetypes
 import os
 import re
-from datetime import datetime
+import secrets
+import time
+from datetime import datetime, timedelta
 from urllib.parse import parse_qs
 from wsgiref.simple_server import make_server
 
@@ -18,6 +22,76 @@ class APIError(Exception):
         self.status_code = status_code
 
 
+# ==========================================
+# SEGURANÇA: SESSÃO ASSINADA, LINK DO ENTREGADOR E FUSO HORÁRIO
+# ==========================================
+TAXA_ENTREGA_PADRAO = 6.00
+SESSAO_HORAS = 12
+FUSO_LOJA_HORAS = -4  # Manaus (UTC-4, sem horário de verão)
+
+
+def agora_local():
+    """Data/hora da loja (Manaus). O servidor roda em UTC."""
+    return datetime.utcnow() + timedelta(hours=FUSO_LOJA_HORAS)
+
+
+def _chave_secreta() -> bytes:
+    chave = (os.environ.get("CONE_SECRET_KEY") or os.environ.get("SECRET_KEY") or "").strip()
+    if not chave:
+        base = (
+            os.environ.get("TURSO_AUTH_TOKEN")
+            or os.environ.get("DATABASE_AUTH_TOKEN")
+            or os.environ.get("LIBSQL_AUTH_TOKEN")
+            or ""
+        ).strip()
+        if base:
+            chave = hashlib.sha256(("cone-magico-sessao:" + base).encode("utf-8")).hexdigest()
+    if not chave:
+        chave = _CHAVE_LOCAL
+    return chave.encode("utf-8")
+
+
+_CHAVE_LOCAL = secrets.token_hex(32)  # uso local sem variáveis de ambiente; sessões caem ao reiniciar
+
+
+def _assinar(texto: str) -> str:
+    return hmac.new(_chave_secreta(), texto.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def criar_token_sessao(user_id) -> str:
+    expira = int(time.time()) + SESSAO_HORAS * 3600
+    corpo = f"{int(user_id)}.{expira}"
+    return f"{corpo}.{_assinar('sessao:' + corpo)}"
+
+
+def ler_token_sessao(token: str):
+    try:
+        uid, expira, assinatura = (token or "").strip().split(".")
+        corpo = f"{int(uid)}.{int(expira)}"
+    except (ValueError, AttributeError):
+        return None
+    if not hmac.compare_digest(assinatura, _assinar("sessao:" + corpo)):
+        return None
+    if int(expira) < int(time.time()):
+        return None
+    return int(uid)
+
+
+def token_entregador(codigo_pedido: str) -> str:
+    return _assinar("entrega:" + (codigo_pedido or "").strip().upper())[:24]
+
+
+def token_entregador_valido(codigo_pedido: str, token: str) -> bool:
+    if not token:
+        return False
+    return hmac.compare_digest(str(token).strip(), token_entregador(codigo_pedido))
+
+
+def sufixo_pedido() -> str:
+    alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "".join(secrets.choice(alfabeto) for _ in range(4))
+
+
 def row_to_dict(row):
     if row is None:
         return None
@@ -29,7 +103,8 @@ def rows_to_list(rows):
 
 
 def get_current_user(headers: dict):
-    user_id = headers.get("X-User-Id") or headers.get("x-user-id")
+    token = headers.get("X-Auth-Token") or headers.get("x-auth-token") or ""
+    user_id = ler_token_sessao(token)
     if not user_id:
         return None
     conn = get_connection()
@@ -70,16 +145,6 @@ def handle_login(body: dict):
     conn = get_connection()
     ensure_default_users(conn)
 
-    if "usuario_id" in body and not body.get("email"):
-        user = conn.execute(
-            "SELECT id, nome, email, perfil, cargo, turno, telefone, salario_base FROM usuarios WHERE id = ? AND ativo = 1",
-            (body["usuario_id"],),
-        ).fetchone()
-        conn.close()
-        if not user:
-            raise APIError("Usuário não encontrado.", 404)
-        return {"usuario": row_to_dict(user)}
-
     email_raw = (body.get("email") or "").strip().lower()
     senha = body.get("senha") or ""
 
@@ -105,19 +170,14 @@ def handle_login(body: dict):
         (email_raw, login_key, hash_password(senha)),
     ).fetchone()
 
-    # Fallback caso digite admin123 no usuário admin
-    if not user and login_key == "admin" and senha == "admin123":
-        user = conn.execute(
-            "SELECT id, nome, email, perfil, cargo, turno, telefone, salario_base FROM usuarios WHERE perfil = 'admin' AND ativo = 1 LIMIT 1"
-        ).fetchone()
-
     conn.close()
     if not user:
         raise APIError("Usuário ou senha incorretos. Verifique suas credenciais.", 401)
-    return {"usuario": row_to_dict(user)}
+    usuario = row_to_dict(user)
+    return {"usuario": usuario, "token": criar_token_sessao(usuario["id"])}
 
 
-def handle_get_usuarios():
+def handle_get_usuarios(completo: bool = True):
     conn = get_connection()
     ensure_default_users(conn)
     rows = conn.execute(
@@ -129,7 +189,10 @@ def handle_get_usuarios():
         """
     ).fetchall()
     conn.close()
-    return rows_to_list(rows)
+    lista = rows_to_list(rows)
+    if not completo:
+        lista = [{k: u.get(k) for k in ("id", "nome", "perfil", "cargo", "turno")} for u in lista]
+    return lista
 
 
 def handle_save_usuario(body: dict, usuario_id: int = None):
@@ -208,8 +271,8 @@ def handle_delete_usuario(usuario_id: int):
 # ==========================================
 
 def handle_dashboard():
-    hoje = datetime.now().strftime("%Y-%m-%d")
-    mes_atual = datetime.now().strftime("%Y-%m")
+    hoje = agora_local().strftime("%Y-%m-%d")
+    mes_atual = agora_local().strftime("%Y-%m")
 
     conn = get_connection()
 
@@ -427,7 +490,7 @@ def handle_save_estoque(body: dict, est_id: int = None):
     quantidade_minima = float(body.get("quantidade_minima") or 5)
     custo_reposicao = float(body.get("custo_reposicao") or 0)
     fornecedor = (body.get("fornecedor") or "").strip()
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M")
+    agora = agora_local().strftime("%Y-%m-%d %H:%M")
 
     if not item:
         raise APIError("O nome do insumo/item de estoque é obrigatório.")
@@ -472,7 +535,7 @@ def handle_movimentar_estoque(est_id: int, body: dict):
         raise APIError("Item de estoque não encontrado.", 404)
 
     nova_qtd = atual["quantidade_atual"] + qtd if operacao == "entrada" else max(0.0, atual["quantidade_atual"] - qtd)
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M")
+    agora = agora_local().strftime("%Y-%m-%d %H:%M")
     conn.execute(
         "UPDATE estoque SET quantidade_atual = ?, atualizado_em = ? WHERE id = ?",
         (round(nova_qtd, 2), agora, est_id),
@@ -670,7 +733,7 @@ def handle_create_venda(body: dict, headers: dict):
     if forma_pagamento == "Fidelidade / Prêmio":
         valor_total = 0.0
 
-    agora = datetime.now()
+    agora = agora_local()
     data_venda = body.get("data_venda") or agora.strftime("%Y-%m-%d")
     hora_venda = body.get("hora_venda") or agora.strftime("%H:%M")
     itens_resumo = ", ".join(resumo_parts)
@@ -814,7 +877,7 @@ def handle_public_cardapio():
     conn.close()
     return {
         "loja": "Sorveteria Cone Mágico",
-        "taxa_entrega_padrao": 6.00,
+        "taxa_entrega_padrao": TAXA_ENTREGA_PADRAO,
         "tempo_estimado": "25 a 40 min",
         "produtos": produtos,
     }
@@ -837,24 +900,45 @@ def handle_public_criar_pedido(body: dict):
     if modalidade != "Retirada no Balcão" and not endereco:
         raise APIError("Informe o endereço completo (Rua, Número, Bairro) para a entrega.")
 
+    conn = get_connection()
+    ensure_default_users(conn)
+
+    # Preço, nome e taxa vêm SEMPRE do cardápio do servidor — nunca do navegador do cliente
+    catalogo = {
+        int(p["id"]): p
+        for p in rows_to_list(conn.execute("SELECT id, nome, preco, disponivel FROM produtos").fetchall())
+    }
+
     subtotal = 0.0
     qtd_sorvetes = 0
     resumo_parts = []
     itens_clean = []
 
     for it in itens:
-        q = int(it.get("qtd") or 1)
+        try:
+            q = int(it.get("qtd") or 1)
+            pid = int(it.get("produto_id") or it.get("id") or 0)
+        except (ValueError, TypeError, AttributeError):
+            conn.close()
+            raise APIError("Item inválido no carrinho. Atualize a página e monte o pedido novamente.")
         if q <= 0:
             continue
-        preco = float(it.get("preco") or 0.0)
-        nome_prod = it.get("nome") or "Sorvete"
+        if q > 50:
+            conn.close()
+            raise APIError("Quantidade máxima por item: 50 unidades. Para encomendas maiores, fale com a loja.")
+        prod = catalogo.get(pid)
+        if not prod or not prod.get("disponivel"):
+            conn.close()
+            raise APIError("Um item do carrinho não está mais disponível. Atualize a página e monte o pedido novamente.")
+        preco = float(prod["preco"])
+        nome_prod = prod["nome"]
         sub = round(q * preco, 2)
         subtotal += sub
         qtd_sorvetes += q
         resumo_parts.append(f"{q}x {nome_prod}")
         itens_clean.append(
             {
-                "produto_id": it.get("produto_id"),
+                "produto_id": pid,
                 "nome": nome_prod,
                 "qtd": q,
                 "preco": preco,
@@ -862,16 +946,22 @@ def handle_public_criar_pedido(body: dict):
             }
         )
 
-    taxa_entrega = 0.0 if modalidade == "Retirada no Balcão" else float(body.get("taxa_entrega", 6.00))
+    if not itens_clean:
+        conn.close()
+        raise APIError("Seu carrinho está vazio! Escolha pelo menos 1 item do cardápio.")
+
+    subtotal = round(subtotal, 2)
+    taxa_entrega = 0.0 if modalidade == "Retirada no Balcão" else TAXA_ENTREGA_PADRAO
     valor_total = round(subtotal + taxa_entrega, 2)
+    if troco_para and troco_para < valor_total:
+        conn.close()
+        raise APIError(f"O valor do troco (R$ {troco_para:.2f}) é menor que o total do pedido (R$ {valor_total:.2f}).")
     itens_resumo = ", ".join(resumo_parts)
 
-    agora = datetime.now()
+    agora = agora_local()
     data_venda = agora.strftime("%Y-%m-%d")
     hora_venda = agora.strftime("%H:%M")
 
-    conn = get_connection()
-    ensure_default_users(conn)
 
     # Vincular ou cadastrar cliente automaticamente pelo telefone para pontuar no Fidelidade!
     tel_digits = re.sub(r"\D", "", telefone)
@@ -923,7 +1013,7 @@ def handle_public_criar_pedido(body: dict):
     funcionario_id = op_row["id"] if op_row else 1
 
     ultimo_id = conn.execute("SELECT COALESCE(MAX(id), 0) as m FROM vendas").fetchone()["m"]
-    codigo_pedido = f"DEL-{2001 + ultimo_id}"
+    codigo_pedido = f"DEL-{2001 + ultimo_id}-{sufixo_pedido()}"
     tipo_atendimento = "Retirada Online" if modalidade == "Retirada no Balcão" else "Delivery Online"
 
     cur = conn.execute(
@@ -997,11 +1087,13 @@ def handle_public_criar_pedido(body: dict):
         "taxa_entrega": taxa_entrega,
         "status_delivery": "Novo / Recebido",
         "pontos_fidelidade": novos_pts,
+        "troco_para": troco_para,
+        "troco": round(troco_para - valor_total, 2) if troco_para else 0.0,
         "mensagem": f"Pedido #{codigo_pedido} enviado para a Sorveteria Cone Mágico! Você acumulou +{qtd_sorvetes} selo(s) no Cartão Fidelidade ({novos_pts}/10)!",
     }
 
 
-def handle_public_consultar_pedido(codigo: str):
+def handle_public_consultar_pedido(codigo: str, token: str = ""):
     conn = get_connection()
     row = conn.execute(
         """
@@ -1023,13 +1115,18 @@ def handle_public_consultar_pedido(codigo: str):
     conn.close()
     if not row:
         raise APIError("Pedido não encontrado.", 404)
-    return row_to_dict(row)
+    pedido = row_to_dict(row)
+    if not token_entregador_valido(pedido["codigo_pedido"], token):
+        # Sem o link do entregador: não expor telefone nem nome completo do cliente
+        pedido["cliente_telefone"] = ""
+        pedido["cliente_nome"] = ((pedido.get("cliente_nome") or "").strip().split(" ") or [""])[0]
+    return pedido
 
 
 def handle_get_delivery(query: dict, headers: dict):
     require_auth(headers)
     status_filtro = query.get("status_delivery") or ""
-    hoje = datetime.now().strftime("%Y-%m-%d")
+    hoje = agora_local().strftime("%Y-%m-%d")
 
     conn = get_connection()
     rows = rows_to_list(
@@ -1056,6 +1153,8 @@ def handle_get_delivery(query: dict, headers: dict):
         ).fetchall()
     )
     conn.close()
+    for r in rows:
+        r["token_entregador"] = token_entregador(r.get("codigo_pedido") or "")
 
     novos = sum(1 for r in rows if (r.get("status_delivery") or "Novo / Recebido") == "Novo / Recebido" and r.get("status") != "Cancelada")
     em_preparo = sum(1 for r in rows if r.get("status_delivery") == "Em Preparo" and r.get("status") != "Cancelada")
@@ -1085,7 +1184,7 @@ def handle_update_delivery_status(venda_id: int, body: dict, headers: dict):
     novo_status_del = (body.get("status_delivery") or "Em Preparo").strip()
     entregador_info = (body.get("entregador_info") or "").strip()
     link_rastreio_99 = (body.get("link_rastreio_99") or "").strip()
-    hoje = datetime.now().strftime("%Y-%m-%d")
+    hoje = agora_local().strftime("%Y-%m-%d")
 
     conn = get_connection()
     venda = conn.execute("SELECT * FROM vendas WHERE id = ?", (venda_id,)).fetchone()
@@ -1132,12 +1231,14 @@ def handle_update_delivery_status(venda_id: int, body: dict, headers: dict):
 
 
 def handle_update_motoboy_gps(codigo: str, body: dict):
+    if not token_entregador_valido(codigo, body.get("token")):
+        raise APIError("Link do entregador inválido. Peça um novo link à loja.", 403)
     lat = float(body.get("lat") or 0.0)
     lng = float(body.get("lng") or 0.0)
     if not lat or not lng:
         raise APIError("Coordenadas de latitude e longitude são obrigatórias.")
 
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    agora = agora_local().strftime("%Y-%m-%d %H:%M:%S")
     entregador_info = (body.get("entregador_info") or "").strip()
 
     conn = get_connection()
@@ -1168,8 +1269,10 @@ def handle_update_motoboy_gps(codigo: str, body: dict):
     }
 
 
-def handle_motoboy_concluir_entrega(codigo: str):
-    hoje = datetime.now().strftime("%Y-%m-%d")
+def handle_motoboy_concluir_entrega(codigo: str, body: dict = None):
+    if not token_entregador_valido(codigo, (body or {}).get("token")):
+        raise APIError("Link do entregador inválido. Peça um novo link à loja.", 403)
+    hoje = agora_local().strftime("%Y-%m-%d")
     conn = get_connection()
     venda = conn.execute(
         "SELECT id, codigo_pedido FROM vendas WHERE upper(codigo_pedido) = ?",
@@ -1208,7 +1311,7 @@ def handle_motoboy_concluir_entrega(codigo: str):
 
 def handle_get_caixa_rapido(headers: dict):
     require_auth(headers)
-    hoje = datetime.now().strftime("%Y-%m-%d")
+    hoje = agora_local().strftime("%Y-%m-%d")
     conn = get_connection()
 
     movimentos = rows_to_list(
@@ -1239,7 +1342,7 @@ def handle_post_caixa_rapido(body: dict, headers: dict):
     if not descricao or valor <= 0:
         raise APIError("Informe o motivo/descrição e um valor maior que zero.")
 
-    hoje = datetime.now().strftime("%Y-%m-%d")
+    hoje = agora_local().strftime("%Y-%m-%d")
     if natureza == "Suprimento":
         tipo = "Receita"
         categoria = "Suprimento / Troco de Caixa"
@@ -1343,7 +1446,7 @@ def handle_save_financeiro(body: dict, fin_id: int = None, headers: dict = None)
     categoria = body.get("categoria") or ("Venda PDV" if tipo == "Receita" else "Despesas da Sorveteria")
     descricao = (body.get("descricao") or "").strip()
     valor = float(body.get("valor") or 0)
-    data_vencimento = body.get("data_vencimento") or datetime.now().strftime("%Y-%m-%d")
+    data_vencimento = body.get("data_vencimento") or agora_local().strftime("%Y-%m-%d")
     status_pagamento = body.get("status_pagamento") or "Pago"
     forma_pagamento = body.get("forma_pagamento") or "PIX"
     cliente_id = int(body["cliente_id"]) if body.get("cliente_id") else None
@@ -1359,7 +1462,7 @@ def handle_save_financeiro(body: dict, fin_id: int = None, headers: dict = None)
 
     data_pagamento = body.get("data_pagamento")
     if status_pagamento == "Pago" and not data_pagamento:
-        data_pagamento = datetime.now().strftime("%Y-%m-%d")
+        data_pagamento = agora_local().strftime("%Y-%m-%d")
     elif status_pagamento != "Pago":
         data_pagamento = None
 
@@ -1422,7 +1525,7 @@ def handle_save_financeiro(body: dict, fin_id: int = None, headers: dict = None)
 
 def handle_quitar_financeiro(fin_id: int, body: dict):
     forma = body.get("forma_pagamento") or "PIX"
-    hoje = datetime.now().strftime("%Y-%m-%d")
+    hoje = agora_local().strftime("%Y-%m-%d")
     conn = get_connection()
     conn.execute(
         "UPDATE financeiro SET status_pagamento = 'Pago', data_pagamento = ?, forma_pagamento = ? WHERE id = ?",
@@ -1463,8 +1566,12 @@ def dispatch_api(method: str, path: str, query: dict, body: dict, headers: dict)
         return handle_dashboard()
 
     # Usuários / Equipe
+    if path == "/api/me" and method == "GET":
+        return {"usuario": require_auth(headers)}
+
     if path == "/api/usuarios" and method == "GET":
-        return handle_get_usuarios()
+        atual = require_auth(headers)
+        return handle_get_usuarios(completo=atual["perfil"] == "admin")
     if path == "/api/usuarios" and method == "POST":
         require_admin(headers)
         uid_body = int(body["id"]) if body.get("id") else None
@@ -1558,13 +1665,13 @@ def dispatch_api(method: str, path: str, query: dict, body: dict, headers: dict)
         return handle_public_criar_pedido(body)
     m_pub_ped = re.match(r"^/api/public/pedido/([A-Za-z0-9\-]+)$", path)
     if m_pub_ped and method == "GET":
-        return handle_public_consultar_pedido(m_pub_ped.group(1))
+        return handle_public_consultar_pedido(m_pub_ped.group(1), query.get("t") or "")
     m_pub_gps = re.match(r"^/api/public/pedido/([A-Za-z0-9\-]+)/gps$", path)
     if m_pub_gps and method in ("POST", "PATCH"):
         return handle_update_motoboy_gps(m_pub_gps.group(1), body)
     m_pub_entregue = re.match(r"^/api/public/pedido/([A-Za-z0-9\-]+)/entregue$", path)
     if m_pub_entregue and method in ("POST", "PATCH"):
-        return handle_motoboy_concluir_entrega(m_pub_entregue.group(1))
+        return handle_motoboy_concluir_entrega(m_pub_entregue.group(1), body)
 
     # Central de Delivery & 99Entrega (Funcionário e Admin)
     if path == "/api/delivery" and method == "GET":

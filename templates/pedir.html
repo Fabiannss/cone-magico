@@ -743,7 +743,7 @@
         <!-- Barra de Busca -->
         <div class="search-container">
             <span class="search-icon">🔍</span>
-            <input type="text" id="campo-busca" class="search-field" placeholder="Buscar casquinha, sundae, taça, milkshake, picolé, pote..." oninput="ClienteApp.filtrarCardapio()">
+            <input type="text" id="campo-busca" class="search-field" placeholder="Buscar taça, cascalho, milk-shake, picolé, açaí..." oninput="ClienteApp.filtrarCardapio()">
         </div>
 
         <!-- Categorias Deslizantes -->
@@ -860,7 +860,7 @@
             </div>
 
             <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-                <input type="text" id="cod-rastreio-busca" class="input-text" style="font-weight:800; text-transform:uppercase;" placeholder="Código do pedido (ex: DEL-2005)">
+                <input type="text" id="cod-rastreio-busca" class="input-text" style="font-weight:800; text-transform:uppercase;" placeholder="Código do pedido (ex: DEL-2005-AB3K)">
                 <button type="button" class="btn-add-cart" style="white-space:nowrap; padding:0 1.25rem;" onclick="ClienteApp.consultarPedidoOnline()">Rastrear</button>
             </div>
 
@@ -912,12 +912,14 @@
             },
 
             renderizarCardapio() {
-                const busca = (document.getElementById("campo-busca")?.value || "").toLowerCase().trim();
+                // Busca sem diferenciar acentos, hífens ou espaços ("acai" acha "Açaí", "milkshake" acha "Milk-Shake")
+                const norm = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+                const busca = norm(document.getElementById("campo-busca")?.value);
                 const container = document.getElementById("produtos-container");
 
                 const produtosFiltrados = this.cardapio.filter(p => {
                     if (this.categoriaSelecionada && p.categoria !== this.categoriaSelecionada) return false;
-                    if (busca && !p.nome.toLowerCase().includes(busca) && !(p.sabor_detalhe || "").toLowerCase().includes(busca)) return false;
+                    if (busca && !norm(p.nome).includes(busca) && !norm(p.sabor_detalhe).includes(busca) && !norm(p.categoria).includes(busca)) return false;
                     return true;
                 });
 
@@ -1139,8 +1141,6 @@
                         </a>
                     ` : "";
 
-                    // Link para o motoboy transmitir GPS
-                    const driverGpsLink = `${window.location.origin}/entregador?codigo=${encodeURIComponent(pedido.codigo_pedido)}`;
 
                     resultadoDiv.innerHTML = `
                         <!-- Resumo do Pedido -->
@@ -1157,7 +1157,7 @@
                             </div>
                             ${pedido.entregador_info ? `<div style="font-size:0.86rem; color:#7c3aed; font-weight:700; margin-bottom:0.35rem;">🛵 Entregador: ${pedido.entregador_info}</div>` : ""}
                             <div style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-top:0.45rem;">
-                                Total: ${this.formatBRL(pedido.valor_total)} (${pedido.forma_pagamento})
+                                Total: ${this.formatBRL(pedido.valor_total)} (${pedido.forma_pagamento})${Number(pedido.troco_para) > 0 ? ` • Troco para ${this.formatBRL(pedido.troco_para)}: ${this.formatBRL(Number(pedido.troco_para) - Number(pedido.valor_total))}` : ""}
                             </div>
                             <div style="margin-top:0.6rem; font-size:0.8rem; background:#fdf2f8; border:1px solid #fbcfe8; padding:0.45rem 0.75rem; border-radius:10px; color:#9d174d;">
                                 🎁 Saldo Cartão Fidelidade: <strong>${pedido.pontos_fidelidade}/10 selos</strong>
@@ -1183,11 +1183,6 @@
                         <h4 style="font-size:0.84rem; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:0.6rem;">Status do Preparo & Entrega:</h4>
                         ${stepperHtml}
 
-                        <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px dashed #e2e8f0; text-align:center;">
-                            <small style="color:#64748b; font-size:0.75rem;">
-                                Link direto do motoboy GPS: <a href="${driverGpsLink}" target="_blank" style="color:#7c3aed; font-weight:700;">Transmitir GPS pelo Celular</a>
-                            </small>
-                        </div>
                     `;
 
                     // Inicializar ou atualizar Mapa Leaflet

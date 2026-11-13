@@ -6,3 +6,6 @@ __pycache__/
 
 .vercel
 .env*
+
+# Banco local de desenvolvimento
+*.db

@@ -1,5 +1,6 @@
 const App = {
     currentUser: null,
+    authToken: "",
     usuarios: [],
     produtos: [],
     estoque: [],
@@ -17,15 +18,13 @@ const App = {
         const despMesEl = document.getElementById("filtro-desp-mes");
         if (despMesEl) despMesEl.value = mesAtual;
 
-        await this.loadUsuariosPublic();
-
-        const saved = sessionStorage.getItem("cone_magico_user");
-        if (saved) {
+        // Sessão: token assinado pelo servidor, validado a cada abertura da página
+        this.authToken = sessionStorage.getItem("cone_magico_token") || "";
+        if (this.authToken) {
             try {
-                const parsed = JSON.parse(saved);
-                const fresh = this.usuarios.find((u) => u.id === parsed.id);
-                if (fresh) {
-                    await this.entrarComUsuario(fresh);
+                const res = await this.api("/api/me");
+                if (res && res.usuario) {
+                    await this.entrarComUsuario(res.usuario);
                     return;
                 }
             } catch (_) {}
@@ -33,44 +32,13 @@ const App = {
         this.mostrarTelaLogin();
     },
 
-    async loadUsuariosPublic() {
-        try {
-            this.usuarios = await this.api("/api/usuarios");
-            this.renderQuickLoginAccounts();
-        } catch (_) {}
-    },
-
     mostrarTelaLogin() {
         this.currentUser = null;
+        this.authToken = "";
         sessionStorage.removeItem("cone_magico_user");
+        sessionStorage.removeItem("cone_magico_token");
         document.getElementById("app-main-layout").style.display = "none";
         document.getElementById("login-screen").style.display = "flex";
-        document.getElementById("login-erro").style.display = "none";
-        this.renderQuickLoginAccounts();
-    },
-
-    renderQuickLoginAccounts() {
-        const box = document.getElementById("login-quick-accounts");
-        if (!box) return;
-        box.innerHTML = this.usuarios
-            .map(
-                (u) => `
-            <button type="button" class="login-quick-item" onclick="App.preencherLogin('${u.email}')">
-                <div>
-                    <strong>${u.perfil === "admin" ? "👑 " : "🍦 "}${u.nome}</strong><br>
-                    <span style="color:#64748b;">Login: <strong>${u.email}</strong> • ${u.cargo || ""}</span>
-                </div>
-                <span class="badge ${u.perfil === "admin" ? "badge-warning" : "badge-pink"}">
-                    ${u.perfil === "admin" ? "ADMIN (Dono)" : "FUNCIONÁRIO"}
-                </span>
-            </button>`
-            )
-            .join("");
-    },
-
-    preencherLogin(email) {
-        document.getElementById("login-email").value = email;
-        document.getElementById("login-senha").value = "123456";
         document.getElementById("login-erro").style.display = "none";
     },
 
@@ -85,6 +53,9 @@ const App = {
                 method: "POST",
                 body: JSON.stringify({ email, senha }),
             });
+            this.authToken = res.token || "";
+            sessionStorage.setItem("cone_magico_token", this.authToken);
+            document.getElementById("login-senha").value = "";
             await this.entrarComUsuario(res.usuario);
             this.toast(`Bem-vindo(a) à Sorveteria Cone Mágico, ${res.usuario.nome}!`);
         } catch (e) {
@@ -132,11 +103,15 @@ const App = {
     async api(path, options = {}) {
         const headers = options.headers || {};
         headers["Content-Type"] = "application/json";
-        if (this.currentUser) {
-            headers["X-User-Id"] = String(this.currentUser.id);
+        if (this.authToken) {
+            headers["X-Auth-Token"] = this.authToken;
         }
         const resp = await fetch(path, { ...options, headers });
         const data = await resp.json();
+        if (resp.status === 401 && this.currentUser && path !== "/api/login") {
+            this.mostrarTelaLogin();
+            throw new Error("Sua sessão expirou. Faça login novamente.");
+        }
         if (!resp.ok) {
             throw new Error(data.erro || "Ocorreu um erro na requisição.");
         }
@@ -911,7 +886,7 @@ const App = {
         document.getElementById("despacho-link-99").value = p.link_rastreio_99 || "";
 
         const baseUrl = window.location.origin;
-        const linkMotoboy = `${baseUrl}/entregador?codigo=${encodeURIComponent(p.codigo_pedido)}`;
+        const linkMotoboy = `${baseUrl}/entregador?codigo=${encodeURIComponent(p.codigo_pedido)}&t=${encodeURIComponent(p.token_entregador || "")}`;
         document.getElementById("despacho-link-motoboy").value = linkMotoboy;
 
         this.openModal("modal-despacho-delivery");
@@ -951,7 +926,8 @@ const App = {
 
     copiarLinkMotoboy(codigoPedido) {
         const baseUrl = window.location.origin;
-        const linkMotoboy = `${baseUrl}/entregador?codigo=${encodeURIComponent(codigoPedido)}`;
+        const ped = (this.pedidosDelivery || []).find((v) => v.codigo_pedido === codigoPedido) || {};
+        const linkMotoboy = `${baseUrl}/entregador?codigo=${encodeURIComponent(codigoPedido)}&t=${encodeURIComponent(ped.token_entregador || "")}`;
         navigator.clipboard.writeText(linkMotoboy).then(() => {
             this.toast(`Link GPS do Motoboy (#${codigoPedido}) copiado!`);
         }).catch(() => {
