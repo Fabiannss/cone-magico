@@ -2358,7 +2358,6 @@ const App = {
     async loadUsuarios() {
         this.usuarios = await this.api("/api/usuarios");
         this.renderUserSelect();
-        this.renderQuickLoginAccounts();
 
         const optsFunc = this.usuarios
             .map((u) => `<option value="${u.id}">${u.nome} (${u.perfil === "admin" ? "ADMIN" : "Funcionário"})</option>`)
