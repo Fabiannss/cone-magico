@@ -1341,9 +1341,21 @@
                 const mapEl = document.getElementById("map-container");
                 if (!mapEl) return;
 
-                // Coordenadas padrão da Loja
-                const lojaLat = Number(pedido.loja_lat || -23.55052);
-                const lojaLng = Number(pedido.loja_lng || -46.633308);
+                // Coordenadas da Loja (Parque Dez de Novembro, Manaus — aproximadas).
+                // O valor antigo do banco apontava para São Paulo; nesse caso usa Manaus.
+                let lojaLat = Number(pedido.loja_lat);
+                let lojaLng = Number(pedido.loja_lng);
+                if (!lojaLat || !lojaLng || lojaLat < -10) {
+                    lojaLat = -3.0800;
+                    lojaLng = -60.0110;
+                }
+
+                // A tela do pedido é redesenhada a cada consulta: se o mapa antigo
+                // ficou preso a um elemento que não existe mais, recria o mapa.
+                if (this.leafletMap && this.leafletMap.getContainer() !== mapEl) {
+                    this.leafletMap.remove();
+                    this.leafletMap = null;
+                }
 
                 // Destino aproximado baseado na loja com deslocamento
                 const destLat = lojaLat + 0.0125;
@@ -1420,6 +1432,14 @@
                     }).addTo(this.leafletMap);
 
                     this.leafletMap.fitBounds(this.routeLine.getBounds(), { padding: [40, 40] });
+                    // O modal acabou de abrir: recalcula o tamanho para os blocos do mapa carregarem
+                    const mapaAtual = this.leafletMap;
+                    [150, 500, 1200].forEach((ms) => setTimeout(() => {
+                        if (this.leafletMap === mapaAtual) {
+                            mapaAtual.invalidateSize();
+                            mapaAtual.fitBounds(this.routeLine.getBounds(), { padding: [40, 40] });
+                        }
+                    }, ms));
                 } else {
                     this.motoboyMarker.setLatLng([motoLat, motoLng]);
                     this.leafletMap.panTo([motoLat, motoLng]);
