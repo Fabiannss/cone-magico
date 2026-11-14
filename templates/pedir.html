@@ -579,6 +579,10 @@
             justify-content: center;
         }
 
+        .aviso-taxa { background: #fffbeb; border: 1px solid #fcd34d; border-left: 5px solid #f59e0b; border-radius: 12px; padding: 0.75rem 0.9rem; margin: 0.4rem 0 0.8rem; font-size: 0.84rem; line-height: 1.5; color: #78350f; }
+        .aviso-taxa strong { color: #92400e; }
+        .aviso-taxa ul { margin: 0.35rem 0 0.35rem 1.1rem; padding: 0; }
+        .aviso-taxa.aviso-retirada { background: #ecfdf5; border-color: #6ee7b7; border-left-color: #10b981; color: #064e3b; }
         .summary-box {
             background: linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 100%);
             border: 1px solid #f9a8d4;
@@ -901,9 +905,10 @@
                     <img src="/static/img/pix-qr.png" alt="QR Code PIX da Cone Mágico">
                     <div>Chave PIX (CNPJ)</div>
                     <div class="pix-chave">38.081.294/0001-04</div>
+                    <div style="margin-top:0.35rem;">Valor a pagar: <strong id="pix-valor-pagar" style="font-size:1.05rem;">R$ 0,00</strong></div>
                     <div>Favorecido: AUREA JULIANE LEAL BARBOSA GUI</div>
                     <button type="button" id="btn-copiar-pix" onclick="ClienteApp.copiarChavePix()">Copiar chave PIX</button>
-                    <small>Informe o valor total do pedido ao pagar e guarde o comprovante. A loja confirma o pagamento.</small>
+                    <small>Pague exatamente o valor total (sorvetes + taxa de entrega) e guarde o comprovante. A loja confirma o pagamento.</small>
                 </div>
 
                 <div class="form-row" id="row-troco-dinheiro" style="display:none;">
@@ -911,17 +916,19 @@
                     <input type="number" step="1.00" id="cli-troco-input" class="input-text" placeholder="Ex: 50,00 (deixe vazio se não precisar de troco)">
                 </div>
 
+                <div class="aviso-taxa" id="aviso-taxa"></div>
+
                 <div class="summary-box">
                     <div class="summary-line">
-                        <span>Subtotal dos Itens:</span>
+                        <span>🍦 Valor dos sorvetes e produtos:</span>
                         <strong id="subtotal-val-txt">R$ 0,00</strong>
                     </div>
                     <div class="summary-line">
-                        <span>Taxa de Entrega:</span>
+                        <span id="taxa-label-txt">🛵 Taxa de entrega:</span>
                         <strong id="taxa-val-txt">Escolha a distância</strong>
                     </div>
                     <div class="summary-line total">
-                        <span>Total do Pedido:</span>
+                        <span>Total a pagar:</span>
                         <span id="total-val-txt">R$ 0,00</span>
                     </div>
                 </div>
@@ -1193,6 +1200,20 @@
                 document.getElementById("subtotal-val-txt").textContent = this.formatBRL(subtotal);
                 document.getElementById("taxa-val-txt").textContent = this.modalidadeEntrega === "Retirada no Balcão" ? "Grátis (Balcão)" : (taxa === 0 ? "Escolha a distância" : this.formatBRL(taxa));
                 document.getElementById("total-val-txt").textContent = this.formatBRL(subtotal + taxa);
+
+                const retirada = this.modalidadeEntrega === "Retirada no Balcão";
+                const faixa = this.faixas.find((x) => x.id === this.faixaEscolhida);
+                document.getElementById("taxa-label-txt").textContent = retirada ? "🏪 Taxa de entrega:" : `🛵 Taxa de entrega${faixa ? " (" + faixa.rotulo + ")" : ""}:`;
+                const aviso = document.getElementById("aviso-taxa");
+                aviso.classList.toggle("aviso-retirada", retirada);
+                aviso.innerHTML = retirada
+                    ? `<strong>Retirada no balcão:</strong> sem taxa de entrega. Você paga somente o valor dos sorvetes: <strong>${this.formatBRL(subtotal)}</strong>.`
+                    : `<strong>⚠️ Aviso:</strong> o valor dos sorvetes e a taxa de entrega são cobrados <strong>separadamente</strong>. A taxa depende da distância até você:<ul>${this.faixas.map((f) => `<li>${f.rotulo}: <strong>${this.formatBRL(f.valor)}</strong></li>`).join("")}</ul>Sorvetes <strong>${this.formatBRL(subtotal)}</strong> + taxa <strong>${taxa ? this.formatBRL(taxa) : "(escolha a distância)"}</strong>${taxa ? ` = total <strong>${this.formatBRL(subtotal + taxa)}</strong>` : ""}.`;
+                const pixVal = document.getElementById("pix-valor-pagar");
+                if (pixVal) pixVal.textContent = (retirada || taxa) ? this.formatBRL(subtotal + taxa) : this.formatBRL(subtotal) + " + taxa";
+                this.rotuloBotaoEnviar = (retirada || taxa) ? `✅ Enviar Pedido — ${this.formatBRL(subtotal + taxa)}` : "✅ Enviar Pedido para o Caixa da Sorveteria";
+                const bf = document.getElementById("btn-enviar-final");
+                if (bf && !bf.disabled) bf.textContent = this.rotuloBotaoEnviar;
             },
 
             async enviarPedidoOnline() {
@@ -1238,7 +1259,7 @@
                     alert(e.message);
                 } finally {
                     btn.disabled = false;
-                    btn.textContent = "✅ Enviar Pedido para o Caixa da Sorveteria";
+                    btn.textContent = this.rotuloBotaoEnviar || "✅ Enviar Pedido para o Caixa da Sorveteria";
                 }
             },
 
