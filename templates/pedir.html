@@ -752,6 +752,9 @@
         .btn-add-item:hover { background: #bae6fd; }
         .btn-add-item.tem-na-sacola { background: #0369a1; color: #ffffff; }
         .btn-add-qtd { font-size: 0.95rem; font-weight: 700; }
+        .endereco-loja { display: block; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 14px; padding: 0.75rem 0.9rem; margin: 0.6rem 0 0.9rem; font-size: 0.84rem; color: #0c4a6e; line-height: 1.45; text-decoration: none; }
+        .endereco-loja strong { display: block; font-size: 0.8rem; color: #075985; margin-bottom: 0.15rem; }
+        .endereco-loja .ver-mapa { display: inline-block; margin-top: 0.35rem; font-weight: 700; color: #0369a1; text-decoration: underline; }
         .rodape-loja { text-align: center; padding: 1.5rem 0 0.5rem; font-size: 0.8rem; }
         .rodape-loja a { color: #64748b; }
 
@@ -781,7 +784,7 @@
             <div class="store-status-bar">
                 <span class="pill-badge pill-aberta"><span class="ponto-verde"></span>Aberta agora</span>
                 <span class="pill-badge" id="pill-taxa-entrega">Entrega R$ 6,00</span>
-                <span class="pill-badge">Retirada grátis</span>
+                <a class="pill-badge" href="#endereco-loja" style="text-decoration:none; color:inherit;">Retirada grátis</a>
             </div>
         </div>
     </header>
@@ -808,6 +811,11 @@
         <!-- Grid de Produtos -->
         <div class="menu-secoes" id="produtos-container"></div>
 
+                <a class="endereco-loja" id="endereco-loja" href="https://www.google.com/maps/search/?api=1&query=Condom%C3%ADnio+Ipanema+Rua+Comercial+362+Parque+Dez+de+Novembro+Manaus+AM" target="_blank" rel="noopener">
+                    <strong>📍 Retire no balcão da sorveteria</strong>
+                    Condomínio Ipanema – Rua Comercial, 362 (em frente ao Bloco A), Parque Dez de Novembro, Manaus - AM
+                    <span class="ver-mapa">Ver no mapa</span>
+                </a>
         <p class="rodape-loja"><a href="/">Acesso da loja</a></p>
     </main>
 
@@ -838,6 +846,12 @@
                         🏪 Retirar no Balcão<br><small style="font-weight:600; color:#10b981;">Sem Taxa (Grátis)</small>
                     </button>
                 </div>
+
+                <a class="endereco-loja" style="display:none;" id="endereco-retirada" href="https://www.google.com/maps/search/?api=1&query=Condom%C3%ADnio+Ipanema+Rua+Comercial+362+Parque+Dez+de+Novembro+Manaus+AM" target="_blank" rel="noopener">
+                    <strong>📍 Retire no balcão da sorveteria</strong>
+                    Condomínio Ipanema – Rua Comercial, 362 (em frente ao Bloco A), Parque Dez de Novembro, Manaus - AM
+                    <span class="ver-mapa">Ver no mapa</span>
+                </a>
 
                 <div class="form-row">
                     <label>Seu Nome Completo *</label>
@@ -1097,6 +1111,7 @@
                 document.getElementById("btn-toggle-delivery").classList.toggle("active", mod !== "Retirada no Balcão");
                 document.getElementById("btn-toggle-retirada").classList.toggle("active", mod === "Retirada no Balcão");
                 document.getElementById("row-endereco-entrega").style.display = mod === "Retirada no Balcão" ? "none" : "block";
+                document.getElementById("endereco-retirada").style.display = mod === "Retirada no Balcão" ? "block" : "none";
                 this.renderizarItensCheckout();
             },
 
@@ -1246,7 +1261,7 @@
                                 <strong>Itens:</strong> ${pedido.itens_resumo}
                             </div>
                             <div style="font-size:0.86rem; color:#1e293b; margin-bottom:0.35rem;">
-                                <strong>Destino:</strong> ${pedido.endereco_entrega || "Retirada no Balcão"}
+                                <strong>Destino:</strong> ${pedido.endereco_entrega || "Retirada no Balcão — Condomínio Ipanema, Rua Comercial, 362 (em frente ao Bloco A), Parque Dez de Novembro"}
                             </div>
                             ${pedido.entregador_info ? `<div style="font-size:0.86rem; color:#075985; font-weight:700; margin-bottom:0.35rem;">🛵 Entregador: ${pedido.entregador_info}</div>` : ""}
                             <div style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-top:0.45rem;">
