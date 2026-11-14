@@ -788,7 +788,7 @@
             </div>
             <div class="store-status-bar">
                 <span class="pill-badge pill-aberta"><span class="ponto-verde"></span>Aberta agora</span>
-                <span class="pill-badge" id="pill-taxa-entrega">Entrega R$ 6,00</span>
+                <span class="pill-badge" id="pill-taxa-entrega">Entrega R$ 12,00</span>
                 <a class="pill-badge" href="#endereco-loja" style="text-decoration:none; color:inherit;">Retirada grátis</a>
             </div>
         </div>
@@ -845,7 +845,7 @@
                 <label style="font-size:0.82rem; font-weight:800; color:#334155; margin-bottom:0.4rem; display:block;">Como deseja receber seu pedido?</label>
                 <div class="toggle-switch-grid">
                     <button type="button" class="toggle-tab-btn active" id="btn-toggle-delivery" onclick="ClienteApp.definirModalidade('99Entrega / Motoboy')">
-                        🛵 Delivery em Casa<br><small style="font-weight:600; color:#0369a1;">99Entrega (+R$ 6,00)</small>
+                        🛵 Delivery em Casa<br><small style="font-weight:600; color:#0369a1;">99Entrega (+R$ 12,00)</small>
                     </button>
                     <button type="button" class="toggle-tab-btn" id="btn-toggle-retirada" onclick="ClienteApp.definirModalidade('Retirada no Balcão')">
                         🏪 Retirar no Balcão<br><small style="font-weight:600; color:#10b981;">Sem Taxa (Grátis)</small>
@@ -911,7 +911,7 @@
                     </div>
                     <div class="summary-line">
                         <span>Taxa de Entrega:</span>
-                        <strong id="taxa-val-txt">R$ 6,00</strong>
+                        <strong id="taxa-val-txt">R$ 12,00</strong>
                     </div>
                     <div class="summary-line total">
                         <span>Total do Pedido:</span>
@@ -950,7 +950,7 @@
             carrinho: [],
             categoriaSelecionada: "",
             modalidadeEntrega: "99Entrega / Motoboy",
-            taxaEntregaFixa: 6.00,
+            taxaEntregaFixa: 12.00,
             ultimoPedidoSalvo: localStorage.getItem("conemagico_last_order") || "",
             pollingTimer: null,
             leafletMap: null,
@@ -965,7 +965,7 @@
                     const res = await fetch("/api/public/cardapio");
                     const data = await res.json();
                     this.cardapio = data.produtos || [];
-                    this.taxaEntregaFixa = Number(data.taxa_entrega_padrao ?? 6.00);
+                    this.taxaEntregaFixa = Number(data.taxa_entrega_padrao ?? 12.00);
                     const pillTaxa = document.getElementById("pill-taxa-entrega");
                     if (pillTaxa) pillTaxa.textContent = `Entrega ${this.formatBRL(this.taxaEntregaFixa)}`;
                     this.renderizarCategorias();
