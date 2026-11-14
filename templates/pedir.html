@@ -752,6 +752,11 @@
         .btn-add-item:hover { background: #bae6fd; }
         .btn-add-item.tem-na-sacola { background: #0369a1; color: #ffffff; }
         .btn-add-qtd { font-size: 0.95rem; font-weight: 700; }
+        .pix-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 14px; padding: 0.9rem; margin: 0.2rem 0 0.9rem; text-align: center; color: #0c4a6e; font-size: 0.84rem; line-height: 1.45; }
+        .pix-box img { width: 190px; max-width: 70%; height: auto; border-radius: 12px; display: block; margin: 0.5rem auto; }
+        .pix-box .pix-chave { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #075985; }
+        .pix-box button { margin-top: 0.4rem; background: #0369a1; color: #fff; border: 0; border-radius: 10px; padding: 0.55rem 1rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; }
+        .pix-box small { display: block; margin-top: 0.45rem; color: #475569; }
         .endereco-loja { display: block; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 14px; padding: 0.75rem 0.9rem; margin: 0.6rem 0 0.9rem; font-size: 0.84rem; color: #0c4a6e; line-height: 1.45; text-decoration: none; }
         .endereco-loja strong { display: block; font-size: 0.8rem; color: #075985; margin-bottom: 0.15rem; }
         .endereco-loja .ver-mapa { display: inline-block; margin-top: 0.35rem; font-weight: 700; color: #0369a1; text-decoration: underline; }
@@ -876,11 +881,22 @@
                 <div class="form-row">
                     <label>Forma de Pagamento *</label>
                     <select id="cli-pagamento-select" class="input-text" onchange="ClienteApp.atualizarOpcoesPagamento()">
-                        <option value="PIX">PIX (Chave instantânea)</option>
+                        <option value="PIX">PIX (QR Code ou chave)</option>
                         <option value="Cartão de Crédito">Cartão de Crédito (Maquininha na Entrega)</option>
                         <option value="Cartão de Débito">Cartão de Débito (Maquininha na Entrega)</option>
                         <option value="Dinheiro">Dinheiro na Entrega</option>
                     </select>
+                </div>
+
+                <div class="pix-box" id="pix-box">
+                    <strong>Pague com PIX</strong><br>
+                    Aponte a câmera do banco para o QR Code ou copie a chave:
+                    <img src="/static/img/pix-qr.png" alt="QR Code PIX da Cone Mágico">
+                    <div>Chave PIX (CNPJ)</div>
+                    <div class="pix-chave">38.081.294/0001-04</div>
+                    <div>Favorecido: AUREA JULIANE LEAL BARBOSA GUI</div>
+                    <button type="button" id="btn-copiar-pix" onclick="ClienteApp.copiarChavePix()">Copiar chave PIX</button>
+                    <small>Informe o valor total do pedido ao pagar e guarde o comprovante. A loja confirma o pagamento.</small>
                 </div>
 
                 <div class="form-row" id="row-troco-dinheiro" style="display:none;">
@@ -1115,9 +1131,22 @@
                 this.renderizarItensCheckout();
             },
 
+            async copiarChavePix() {
+                const chave = "38081294000104";
+                const btn = document.getElementById("btn-copiar-pix");
+                try {
+                    await navigator.clipboard.writeText(chave);
+                    btn.textContent = "Chave copiada!";
+                } catch (e) {
+                    window.prompt("Copie a chave PIX (CNPJ):", chave);
+                }
+                setTimeout(() => { btn.textContent = "Copiar chave PIX"; }, 2500);
+            },
+
             atualizarOpcoesPagamento() {
                 const forma = document.getElementById("cli-pagamento-select").value;
                 document.getElementById("row-troco-dinheiro").style.display = forma === "Dinheiro" ? "block" : "none";
+                document.getElementById("pix-box").style.display = forma === "PIX" ? "block" : "none";
             },
 
             renderizarItensCheckout() {
