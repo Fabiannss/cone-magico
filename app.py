@@ -25,7 +25,7 @@ class APIError(Exception):
 # ==========================================
 # SEGURANÇA: SESSÃO ASSINADA, LINK DO ENTREGADOR E FUSO HORÁRIO
 # ==========================================
-TAXA_ENTREGA_PADRAO = 6.00
+TAXA_ENTREGA_PADRAO = 12.00
 SESSAO_HORAS = 12
 FUSO_LOJA_HORAS = -4  # Manaus (UTC-4, sem horário de verão)
 
