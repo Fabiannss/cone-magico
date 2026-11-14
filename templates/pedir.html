@@ -788,7 +788,7 @@
             </div>
             <div class="store-status-bar">
                 <span class="pill-badge pill-aberta"><span class="ponto-verde"></span>Aberta agora</span>
-                <span class="pill-badge" id="pill-taxa-entrega">Entrega R$ 12,00</span>
+                <span class="pill-badge" id="pill-taxa-entrega">Entrega a partir de R$ 5,00</span>
                 <a class="pill-badge" href="#endereco-loja" style="text-decoration:none; color:inherit;">Retirada grátis</a>
             </div>
         </div>
@@ -845,7 +845,7 @@
                 <label style="font-size:0.82rem; font-weight:800; color:#334155; margin-bottom:0.4rem; display:block;">Como deseja receber seu pedido?</label>
                 <div class="toggle-switch-grid">
                     <button type="button" class="toggle-tab-btn active" id="btn-toggle-delivery" onclick="ClienteApp.definirModalidade('99Entrega / Motoboy')">
-                        🛵 Delivery em Casa<br><small style="font-weight:600; color:#0369a1;">99Entrega (+R$ 12,00)</small>
+                        🛵 Delivery em Casa<br><small style="font-weight:600; color:#0369a1;">99Entrega (R$ 5 a R$ 12)</small>
                     </button>
                     <button type="button" class="toggle-tab-btn" id="btn-toggle-retirada" onclick="ClienteApp.definirModalidade('Retirada no Balcão')">
                         🏪 Retirar no Balcão<br><small style="font-weight:600; color:#10b981;">Sem Taxa (Grátis)</small>
@@ -866,6 +866,13 @@
                 <div class="form-row">
                     <label>Seu WhatsApp (Pontua no Cartão Fidelidade) *</label>
                     <input type="tel" id="cli-whatsapp-input" class="input-text" required placeholder="(11) 99999-9999">
+                </div>
+
+                <div class="form-row" id="row-faixa-entrega">
+                    <label>Distância da entrega (taxa da 99) *</label>
+                    <select id="cli-faixa-select" class="input-text" onchange="ClienteApp.escolherFaixa()">
+                        <option value="">Escolha a distância até você</option>
+                    </select>
                 </div>
 
                 <div class="form-row" id="row-endereco-entrega">
@@ -911,7 +918,7 @@
                     </div>
                     <div class="summary-line">
                         <span>Taxa de Entrega:</span>
-                        <strong id="taxa-val-txt">R$ 12,00</strong>
+                        <strong id="taxa-val-txt">Escolha a distância</strong>
                     </div>
                     <div class="summary-line total">
                         <span>Total do Pedido:</span>
@@ -950,7 +957,13 @@
             carrinho: [],
             categoriaSelecionada: "",
             modalidadeEntrega: "99Entrega / Motoboy",
-            taxaEntregaFixa: 12.00,
+            faixas: [{id:"ate2",rotulo:"Até 2 km",valor:5},{id:"ate5",rotulo:"De 3 a 5 km",valor:8},{id:"ate8",rotulo:"De 6 a 8 km",valor:12}],
+            faixaEscolhida: "",
+            taxaAtual() {
+                if (this.modalidadeEntrega === "Retirada no Balcão") return 0;
+                const f = this.faixas.find((x) => x.id === this.faixaEscolhida);
+                return f ? f.valor : 0;
+            },
             ultimoPedidoSalvo: localStorage.getItem("conemagico_last_order") || "",
             pollingTimer: null,
             leafletMap: null,
@@ -965,9 +978,12 @@
                     const res = await fetch("/api/public/cardapio");
                     const data = await res.json();
                     this.cardapio = data.produtos || [];
-                    this.taxaEntregaFixa = Number(data.taxa_entrega_padrao ?? 12.00);
+                    if (Array.isArray(data.faixas_entrega) && data.faixas_entrega.length) this.faixas = data.faixas_entrega;
+                    const sel = document.getElementById("cli-faixa-select");
+                    sel.innerHTML = '<option value="">Escolha a distância até você</option>' +
+                        this.faixas.map((f) => `<option value="${f.id}">${f.rotulo} — ${this.formatBRL(f.valor)}</option>`).join("");
                     const pillTaxa = document.getElementById("pill-taxa-entrega");
-                    if (pillTaxa) pillTaxa.textContent = `Entrega ${this.formatBRL(this.taxaEntregaFixa)}`;
+                    if (pillTaxa) pillTaxa.textContent = `Entrega a partir de ${this.formatBRL(Math.min(...this.faixas.map((f) => f.valor)))}`;
                     this.renderizarCategorias();
                     this.renderizarCardapio();
                 } catch (e) {
@@ -1128,6 +1144,12 @@
                 document.getElementById("btn-toggle-retirada").classList.toggle("active", mod === "Retirada no Balcão");
                 document.getElementById("row-endereco-entrega").style.display = mod === "Retirada no Balcão" ? "none" : "block";
                 document.getElementById("endereco-retirada").style.display = mod === "Retirada no Balcão" ? "block" : "none";
+                document.getElementById("row-faixa-entrega").style.display = mod === "Retirada no Balcão" ? "none" : "block";
+                this.renderizarItensCheckout();
+            },
+
+            escolherFaixa() {
+                this.faixaEscolhida = document.getElementById("cli-faixa-select").value;
                 this.renderizarItensCheckout();
             },
 
@@ -1167,14 +1189,19 @@
                 `).join("");
 
                 const subtotal = this.carrinho.reduce((acc, i) => acc + i.preco * i.qtd, 0);
-                const taxa = this.modalidadeEntrega === "Retirada no Balcão" ? 0 : this.taxaEntregaFixa;
+                const taxa = this.taxaAtual();
                 document.getElementById("subtotal-val-txt").textContent = this.formatBRL(subtotal);
-                document.getElementById("taxa-val-txt").textContent = taxa === 0 ? "Grátis (Balcão)" : this.formatBRL(taxa);
+                document.getElementById("taxa-val-txt").textContent = this.modalidadeEntrega === "Retirada no Balcão" ? "Grátis (Balcão)" : (taxa === 0 ? "Escolha a distância" : this.formatBRL(taxa));
                 document.getElementById("total-val-txt").textContent = this.formatBRL(subtotal + taxa);
             },
 
             async enviarPedidoOnline() {
                 const btn = document.getElementById("btn-enviar-final");
+                if (this.modalidadeEntrega !== "Retirada no Balcão" && !this.faixaEscolhida) {
+                    alert("Escolha a distância da entrega para calcular a taxa.");
+                    document.getElementById("cli-faixa-select").focus();
+                    return;
+                }
                 btn.disabled = true;
                 btn.textContent = "⏳ Enviando pedido...";
 
@@ -1187,7 +1214,7 @@
                         observacoes: document.getElementById("cli-obs-input").value,
                         forma_pagamento: document.getElementById("cli-pagamento-select").value,
                         troco_para: document.getElementById("cli-troco-input").value || 0,
-                        taxa_entrega: this.modalidadeEntrega === "Retirada no Balcão" ? 0 : this.taxaEntregaFixa,
+                        faixa_entrega: this.modalidadeEntrega === "Retirada no Balcão" ? "" : this.faixaEscolhida,
                         itens: this.carrinho,
                     };
 

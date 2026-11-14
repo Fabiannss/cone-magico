@@ -26,6 +26,12 @@ class APIError(Exception):
 # SEGURANÇA: SESSÃO ASSINADA, LINK DO ENTREGADOR E FUSO HORÁRIO
 # ==========================================
 TAXA_ENTREGA_PADRAO = 12.00
+# Taxas fixas de entrega por faixa de distância (conforme cotação da 99Entrega)
+FAIXAS_ENTREGA = {
+    "ate2": {"rotulo": "Até 2 km", "valor": 5.00},
+    "ate5": {"rotulo": "De 3 a 5 km", "valor": 8.00},
+    "ate8": {"rotulo": "De 6 a 8 km", "valor": 12.00},
+}
 SESSAO_HORAS = 12
 FUSO_LOJA_HORAS = -4  # Manaus (UTC-4, sem horário de verão)
 
@@ -878,6 +884,9 @@ def handle_public_cardapio():
     return {
         "loja": "Sorveteria Cone Mágico",
         "taxa_entrega_padrao": TAXA_ENTREGA_PADRAO,
+        "faixas_entrega": [
+            {"id": k, "rotulo": v["rotulo"], "valor": v["valor"]} for k, v in FAIXAS_ENTREGA.items()
+        ],
         "tempo_estimado": "25 a 40 min",
         "produtos": produtos,
     }
@@ -951,7 +960,15 @@ def handle_public_criar_pedido(body: dict):
         raise APIError("Seu carrinho está vazio! Escolha pelo menos 1 item do cardápio.")
 
     subtotal = round(subtotal, 2)
-    taxa_entrega = 0.0 if modalidade == "Retirada no Balcão" else TAXA_ENTREGA_PADRAO
+    if modalidade == "Retirada no Balcão":
+        taxa_entrega = 0.0
+    else:
+        faixa = FAIXAS_ENTREGA.get(str(body.get("faixa_entrega") or ""))
+        if not faixa:
+            conn.close()
+            raise APIError("Escolha a distância da entrega (até 2 km, de 3 a 5 km ou de 6 a 8 km).")
+        taxa_entrega = faixa["valor"]
+        observacoes = (f"[Distância 99: {faixa['rotulo']}] " + observacoes).strip()
     valor_total = round(subtotal + taxa_entrega, 2)
     if troco_para and troco_para < valor_total:
         conn.close()
