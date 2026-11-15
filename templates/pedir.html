@@ -1020,7 +1020,7 @@
         </div>
     </div>
 
-    <script src="/static/js/ilustracoes.js?v=2"></script>
+    <script src="/static/js/ilustracoes.js?v=3"></script>
     <script>ConeIlustra.aplicarIcones();</script>
     <script>
         const ClienteApp = {
@@ -1261,7 +1261,7 @@
                     <h4 class="sab-grupo-titulo">${esc(g.grupo)}</h4>
                     ${g.itens.map(nome => {
                         const n = e.contagem[nome] || 0;
-                        const bola = `<span class="sab-bola" style="background:${this.corDoSabor(nome)}"></span><span class="sab-nome">${esc(nome)}</span>`;
+                        const bola = `${ConeIlustra.sabor(nome, 46)}<span class="sab-nome">${esc(nome)}</span>`;
                         if (max === 1) {
                             return `<button type="button" class="sab-linha" role="radio" aria-checked="${n ? "true" : "false"}" data-sabor="${esc(nome)}" onclick="ClienteApp.mudarSabor(this.dataset.sabor, 1)">${bola}<span class="sab-radio ${n ? "marcado" : ""}"></span></button>`;
                         }
