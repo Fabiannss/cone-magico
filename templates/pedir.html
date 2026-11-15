@@ -854,7 +854,7 @@
         <div class="menu-secoes" id="produtos-container"></div>
 
                 <a class="endereco-loja" id="endereco-loja" href="https://www.google.com/maps/search/?api=1&query=Condom%C3%ADnio+Ipanema+Rua+Comercial+362+Parque+Dez+de+Novembro+Manaus+AM" target="_blank" rel="noopener">
-                    <strong>📍 Retire no balcão da sorveteria</strong>
+                    <strong><span data-icone="pino"></span> Retire no balcão da sorveteria</strong>
                     Condomínio Ipanema – Rua Comercial, 362 (em frente ao Bloco A), Parque Dez de Novembro, Manaus - AM
                     <span class="ver-mapa">Ver no mapa</span>
                 </a>
@@ -872,7 +872,7 @@
     <div class="modal-overlay" id="modal-checkout">
         <div class="modal-card">
             <div class="modal-top-bar">
-                <h3 class="modal-title">🍦 Sacola de Pedido</h3>
+                <h3 class="modal-title"><span data-icone="sacola"></span> Sacola de pedido</h3>
                 <button type="button" class="btn-modal-close" onclick="ClienteApp.fecharModalCheckout()">✕</button>
             </div>
 
@@ -882,15 +882,15 @@
                 <label style="font-size:0.82rem; font-weight:800; color:#334155; margin-bottom:0.4rem; display:block;">Como deseja receber seu pedido?</label>
                 <div class="toggle-switch-grid">
                     <button type="button" class="toggle-tab-btn active" id="btn-toggle-delivery" onclick="ClienteApp.definirModalidade('99Entrega / Motoboy')">
-                        🛵 Delivery em Casa<br><small style="font-weight:600; color:#0369a1;">99Entrega (R$ 5 a R$ 12)</small>
+                        <span data-icone="moto"></span> Delivery em casa<br><small style="font-weight:600; color:#0369a1;">99Entrega (R$ 5 a R$ 12)</small>
                     </button>
                     <button type="button" class="toggle-tab-btn" id="btn-toggle-retirada" onclick="ClienteApp.definirModalidade('Retirada no Balcão')">
-                        🏪 Retirar no Balcão<br><small style="font-weight:600; color:#10b981;">Sem Taxa (Grátis)</small>
+                        <span data-icone="loja"></span> Retirar no balcão<br><small style="font-weight:600; color:#10b981;">Sem Taxa (Grátis)</small>
                     </button>
                 </div>
 
                 <a class="endereco-loja" style="display:none;" id="endereco-retirada" href="https://www.google.com/maps/search/?api=1&query=Condom%C3%ADnio+Ipanema+Rua+Comercial+362+Parque+Dez+de+Novembro+Manaus+AM" target="_blank" rel="noopener">
-                    <strong>📍 Retire no balcão da sorveteria</strong>
+                    <strong><span data-icone="pino"></span> Retire no balcão da sorveteria</strong>
                     Condomínio Ipanema – Rua Comercial, 362 (em frente ao Bloco A), Parque Dez de Novembro, Manaus - AM
                     <span class="ver-mapa">Ver no mapa</span>
                 </a>
@@ -955,11 +955,11 @@
 
                 <div class="summary-box">
                     <div class="summary-line">
-                        <span>🍦 Valor dos sorvetes e produtos:</span>
+                        <span><span data-icone="sorvete"></span> Valor dos sorvetes e produtos:</span>
                         <strong id="subtotal-val-txt">R$ 0,00</strong>
                     </div>
                     <div class="summary-line">
-                        <span id="taxa-label-txt">🛵 Taxa de entrega:</span>
+                        <span id="taxa-label-txt"><span data-icone="moto"></span> Taxa de entrega:</span>
                         <strong id="taxa-val-txt">Informe o endereço</strong>
                     </div>
                     <div class="summary-line total">
@@ -969,7 +969,7 @@
                 </div>
 
                 <button type="submit" id="btn-enviar-final" class="btn-submit-order">
-                    ✅ Enviar Pedido para o Caixa da Sorveteria
+                    Enviar pedido para o Caixa da Sorveteria
                 </button>
             </form>
         </div>
@@ -1007,7 +1007,7 @@
     <div class="modal-overlay" id="modal-rastreio">
         <div class="modal-card">
             <div class="modal-top-bar">
-                <h3 class="modal-title">🛵 Rastreamento em Tempo Real</h3>
+                <h3 class="modal-title"><span data-icone="moto"></span> Acompanhar pedido</h3>
                 <button type="button" class="btn-modal-close" onclick="ClienteApp.fecharModalRastreio()">✕</button>
             </div>
 
@@ -1020,7 +1020,8 @@
         </div>
     </div>
 
-    <script src="/static/js/ilustracoes.js?v=1"></script>
+    <script src="/static/js/ilustracoes.js?v=2"></script>
+    <script>ConeIlustra.aplicarIcones();</script>
     <script>
         const ClienteApp = {
             cardapio: [],
@@ -1143,7 +1144,7 @@
                                 const q = qtdNaSacola(p.id);
                                 return `
                                 <div class="menu-item">
-                                    ${ConeIlustra.produto(p, 48)}
+                                    ${ConeIlustra.produto(p, 58)}
                                     <div class="menu-item-texto">
                                         <span class="menu-item-nome">${nomeCurto(p.nome)}</span>
                                         ${p.qtd_sabores ? `<span class="menu-item-detalhe">Você escolhe ${p.qtd_sabores === 1 ? "o sabor" : "os " + p.qtd_sabores + " sabores"}</span>` : (detalheUtil(p) ? `<span class="menu-item-detalhe">${detalheUtil(p)}</span>` : "")}
@@ -1464,15 +1465,15 @@
 
                 const retirada = this.modalidadeEntrega === "Retirada no Balcão";
                 const faixa = this.faixas.find((x) => x.id === this.faixaEscolhida);
-                document.getElementById("taxa-label-txt").textContent = retirada ? "🏪 Taxa de entrega:" : `🛵 Taxa de entrega${this.cotacao ? " (" + String(this.cotacao.distancia_km).replace(".", ",") + " km)" : (faixa ? " (" + faixa.rotulo + ")" : "")}:`;
+                document.getElementById("taxa-label-txt").innerHTML = retirada ? ConeIlustra.icone("loja") + " Taxa de entrega:" : `${ConeIlustra.icone("moto")} Taxa de entrega${this.cotacao ? " (" + String(this.cotacao.distancia_km).replace(".", ",") + " km)" : (faixa ? " (" + faixa.rotulo + ")" : "")}:`;
                 const aviso = document.getElementById("aviso-taxa");
                 aviso.classList.toggle("aviso-retirada", retirada);
                 aviso.innerHTML = retirada
                     ? `<strong>Retirada no balcão:</strong> sem taxa de entrega. Você paga somente o valor dos sorvetes: <strong>${this.formatBRL(subtotal)}</strong>.`
-                    : `<strong>⚠️ Aviso:</strong> o valor dos sorvetes e a taxa de entrega são cobrados <strong>separadamente</strong>. A taxa é calculada pela distância da loja até o seu endereço:<ul>${this.faixas.map((f) => `<li>${f.rotulo}: <strong>${this.formatBRL(f.valor)}</strong></li>`).join("")}</ul>Sorvetes <strong>${this.formatBRL(subtotal)}</strong> + taxa <strong>${taxa ? this.formatBRL(taxa) : "(informe o endereço)"}</strong>${taxa ? ` = total <strong>${this.formatBRL(subtotal + taxa)}</strong>` : ""}.`;
+                    : `<strong>${ConeIlustra.icone("alerta")} Aviso:</strong> o valor dos sorvetes e a taxa de entrega são cobrados <strong>separadamente</strong>. A taxa é calculada pela distância da loja até o seu endereço:<ul>${this.faixas.map((f) => `<li>${f.rotulo}: <strong>${this.formatBRL(f.valor)}</strong></li>`).join("")}</ul>Sorvetes <strong>${this.formatBRL(subtotal)}</strong> + taxa <strong>${taxa ? this.formatBRL(taxa) : "(informe o endereço)"}</strong>${taxa ? ` = total <strong>${this.formatBRL(subtotal + taxa)}</strong>` : ""}.`;
                 const pixVal = document.getElementById("pix-valor-pagar");
                 if (pixVal) pixVal.textContent = (retirada || taxa) ? this.formatBRL(subtotal + taxa) : this.formatBRL(subtotal) + " + taxa";
-                this.rotuloBotaoEnviar = (retirada || taxa) ? `✅ Enviar Pedido — ${this.formatBRL(subtotal + taxa)}` : "✅ Enviar Pedido para o Caixa da Sorveteria";
+                this.rotuloBotaoEnviar = (retirada || taxa) ? `Enviar pedido — ${this.formatBRL(subtotal + taxa)}` : "Enviar pedido para o Caixa da Sorveteria";
                 const bf = document.getElementById("btn-enviar-final");
                 if (bf && !bf.disabled) bf.textContent = this.rotuloBotaoEnviar;
             },
@@ -1491,7 +1492,7 @@
                         btn.textContent = "⏳ Calculando a taxa de entrega...";
                         const ok = await this.calcularTaxaPeloEndereco();
                         btn.disabled = false;
-                        btn.textContent = this.rotuloBotaoEnviar || "✅ Enviar Pedido";
+                        btn.textContent = this.rotuloBotaoEnviar || "Enviar pedido";
                         document.getElementById("taxa-resultado").scrollIntoView({ block: "center", behavior: "smooth" });
                         if (ok) alert("Calculamos a taxa de entrega. Confira o total e toque em Enviar Pedido de novo.");
                         return;
@@ -1538,7 +1539,7 @@
                     alert(e.message);
                 } finally {
                     btn.disabled = false;
-                    btn.textContent = this.rotuloBotaoEnviar || "✅ Enviar Pedido para o Caixa da Sorveteria";
+                    btn.textContent = this.rotuloBotaoEnviar || "Enviar pedido para o Caixa da Sorveteria";
                 }
             },
 
@@ -1582,10 +1583,10 @@
                     const isPreparo = statusDel === "Em Preparo";
 
                     const etapas = [
-                        { label: "1. Pedido Recebido pelo Caixa", done: true, active: statusDel === "Novo / Recebido", icon: "🔔" },
-                        { label: "2. Preparando seus Sorvetes", done: isPreparo || isEmRota || isEntregue, active: isPreparo, icon: "🍨" },
-                        { label: "3. Motoboy em Rota de Entrega (GPS Ao Vivo)", done: isEmRota || isEntregue, active: isEmRota, icon: "🛵" },
-                        { label: "4. Pedido Entregue / Concluído!", done: isEntregue, active: isEntregue, icon: "✅" },
+                        { label: "1. Pedido Recebido pelo Caixa", done: true, active: statusDel === "Novo / Recebido", icon: ConeIlustra.icone("sino", 24) },
+                        { label: "2. Preparando seus Sorvetes", done: isPreparo || isEmRota || isEntregue, active: isPreparo, icon: ConeIlustra.icone("preparo", 24) },
+                        { label: "3. Motoboy em Rota de Entrega (GPS Ao Vivo)", done: isEmRota || isEntregue, active: isEmRota, icon: ConeIlustra.icone("moto", 24) },
+                        { label: "4. Pedido Entregue / Concluído!", done: isEntregue, active: isEntregue, icon: ConeIlustra.icone("check", 24) },
                     ];
 
                     const stepperHtml = etapas.map(et => {
@@ -1601,7 +1602,7 @@
                     // Botão oficial da 99 se houver link cadastrado
                     const link99Btn = pedido.link_rastreio_99 ? `
                         <a href="${pedido.link_rastreio_99}" target="_blank" class="btn-official-99">
-                            <span>🗺️</span> Acompanhar Corrida ao Vivo no App da 99
+                            <span>${ConeIlustra.icone("mapa")}</span> Acompanhar Corrida ao Vivo no App da 99
                         </a>
                     ` : "";
 
@@ -1619,12 +1620,12 @@
                             <div style="font-size:0.86rem; color:#1e293b; margin-bottom:0.35rem;">
                                 <strong>Destino:</strong> ${pedido.endereco_entrega || "Retirada no Balcão — Condomínio Ipanema, Rua Comercial, 362 (em frente ao Bloco A), Parque Dez de Novembro"}
                             </div>
-                            ${pedido.entregador_info ? `<div style="font-size:0.86rem; color:#075985; font-weight:700; margin-bottom:0.35rem;">🛵 Entregador: ${pedido.entregador_info}</div>` : ""}
+                            ${pedido.entregador_info ? `<div style="font-size:0.86rem; color:#075985; font-weight:700; margin-bottom:0.35rem;">${ConeIlustra.icone("moto")} Entregador: ${pedido.entregador_info}</div>` : ""}
                             <div style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-top:0.45rem;">
                                 Total: ${this.formatBRL(pedido.valor_total)} (${pedido.forma_pagamento})${Number(pedido.troco_para) > 0 ? ` • Troco para ${this.formatBRL(pedido.troco_para)}: ${this.formatBRL(Number(pedido.troco_para) - Number(pedido.valor_total))}` : ""}
                             </div>
                             <div style="margin-top:0.6rem; font-size:0.8rem; background:#f0f9ff; border:1px solid #bae6fd; padding:0.45rem 0.75rem; border-radius:10px; color:#9d174d;">
-                                🎁 Saldo Cartão Fidelidade: <strong>${pedido.pontos_fidelidade}/10 selos</strong>
+                                ${ConeIlustra.icone("presente")} Saldo do cartão fidelidade: <strong>${pedido.pontos_fidelidade}/10 selos</strong>
                             </div>
                         </div>
 
@@ -1634,7 +1635,7 @@
                         ${pedido.modalidade_entrega !== "Retirada no Balcão" ? `
                             <div style="margin-bottom:1rem;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.45rem;">
-                                    <strong style="font-size:0.86rem; color:#334155;">📍 Mapa GPS Ao Vivo do Percurso:</strong>
+                                    <strong style="font-size:0.86rem; color:#334155;">${ConeIlustra.icone("pino")} Mapa do percurso:</strong>
                                     <span style="font-size:0.75rem; color:#10b981; font-weight:700; display:flex; align-items:center; gap:0.3rem;">
                                         <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
                                         ${isEmRota ? "Motoboy em Movimento" : "Aguardando Despacho"}
