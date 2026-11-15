@@ -7,7 +7,9 @@ import re
 import secrets
 import time
 from datetime import datetime, timedelta
-from urllib.parse import parse_qs
+import math
+import urllib.request
+from urllib.parse import parse_qs, urlencode
 from wsgiref.simple_server import make_server
 
 from database import ensure_default_users, get_connection, hash_password, init_db, is_turso_enabled
@@ -26,12 +28,161 @@ class APIError(Exception):
 # SEGURANÇA: SESSÃO ASSINADA, LINK DO ENTREGADOR E FUSO HORÁRIO
 # ==========================================
 TAXA_ENTREGA_PADRAO = 12.00
-# Taxas fixas de entrega por faixa de distância (conforme cotação da 99Entrega)
+# Taxas fixas de entrega por faixa de distância (rota de moto a partir da loja)
 FAIXAS_ENTREGA = {
-    "ate2": {"rotulo": "Até 2 km", "valor": 5.00},
-    "ate5": {"rotulo": "De 3 a 5 km", "valor": 8.00},
-    "ate8": {"rotulo": "De 6 a 8 km", "valor": 12.00},
+    "ate2": {"rotulo": "Até 2 km", "valor": 5.00, "max_km": 2.0},
+    "ate5": {"rotulo": "De 2 a 5 km", "valor": 8.00, "max_km": 5.0},
+    "ate8": {"rotulo": "Acima de 5 km", "valor": 12.00, "max_km": None},
 }
+# Localização da loja (Google Maps: Sorveteria Cone Mágico, Parque Dez de Novembro)
+LOJA_LAT = -3.0791912
+LOJA_LNG = -60.0014081
+
+# Sabores de sorvete disponíveis no cardápio online
+SABORES = [
+    {"grupo": "Chocolates e bombons", "itens": [
+        "Chocolate Belga", "Chocolate Trufado", "Chocolate com Pistache", "Chocomenta", "Sonho de Valsa", "Serenata"]},
+    {"grupo": "Cremosos e especiais", "itens": [
+        "Ninho com Nutella", "Leite Trufado", "Leite Condensado com Frutas", "Doce de Leite", "Caramelo Salgado",
+        "Cookies & Cream", "Flocos", "Galaxy (Especial Cone Mágico)"]},
+    {"grupo": "Frutas e iogurtes", "itens": [
+        "Morango Mesclado", "Grego com Morango", "Grego com Amarenas", "Mousse de Maracujá", "Abacaxi ao Vinho",
+        "Passas ao Rum"]},
+    {"grupo": "Regionais e clássicos", "itens": [
+        "Açaí com Leite Ninho", "Tucumã", "Tapioca", "Milho Verde", "Chiclete", "Alasca"]},
+]
+SABORES_VALIDOS = {nome for g in SABORES for nome in g["itens"]}
+
+
+def sabores_necessarios(nome: str, categoria: str) -> int:
+    """Quantos sabores o cliente escolhe neste produto (0 = não tem escolha de sabor)."""
+    if (categoria or "") in ("Picolé", "Bebidas", "Açaí e Cupuaçu", "Adicional / Calda"):
+        return 0
+    m = re.search(r"(\d+)\s+sabor", nome or "", re.IGNORECASE)
+    if m:
+        return max(0, min(int(m.group(1)), 8))
+    if (categoria or "") == "Milkshake":
+        return 1
+    return 0
+
+
+def faixa_por_distancia(km: float) -> str:
+    for fid, f in FAIXAS_ENTREGA.items():
+        if f["max_km"] is None or km <= f["max_km"]:
+            return fid
+    return "ate8"
+
+
+def _http_json(url: str, timeout: float = 6.0):
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "ConeMagicoCardapio/1.0 (sorveteria; Manaus-AM)",
+        "Accept-Language": "pt-BR",
+    })
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _haversine_km(lat1, lng1, lat2, lng2) -> float:
+    r = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+# Área urbana de Manaus (para não aceitar endereço de outra cidade com o mesmo nome de rua)
+_MANAUS_BOX = (-60.12, -3.17, -59.82, -2.92)  # oeste, sul, leste, norte
+
+
+def _dentro_de_manaus(lat: float, lng: float) -> bool:
+    o, sul, l, n = _MANAUS_BOX
+    return sul <= lat <= n and o <= lng <= l
+
+
+def geocodificar_endereco(endereco: str):
+    """Procura o endereço no mapa (OpenStreetMap). Retorna (lat, lng, descricao) ou None."""
+    texto = re.sub(r"\s+", " ", endereco or "").strip()
+    if len(texto) < 6:
+        return None
+    # Tira complementos que atrapalham a busca (apto, bloco, casa...)
+    limpo = re.sub(r"\b(apto?|apartamento|bloco|bl|casa|cs|torre|sala|fundos|ap)\.?\s*\w*", " ", texto, flags=re.IGNORECASE)
+    limpo = re.sub(r"\s+", " ", limpo).strip(" ,-")
+    tentativas = []
+    for t in (limpo, re.sub(r"\d+", " ", limpo)):
+        t = re.sub(r"\s+", " ", t).strip(" ,-")
+        if t and t not in tentativas:
+            tentativas.append(t)
+    o, sul, l, n = _MANAUS_BOX
+    for t in tentativas:
+        try:
+            dados = _http_json("https://nominatim.openstreetmap.org/search?" + urlencode({
+                "q": f"{t}, Manaus, Amazonas, Brasil", "format": "jsonv2", "limit": 3, "countrycodes": "br",
+                "viewbox": f"{o},{n},{l},{sul}", "bounded": 1,
+            }))
+            for d in dados or []:
+                lat, lng = float(d["lat"]), float(d["lon"])
+                if _dentro_de_manaus(lat, lng):
+                    return lat, lng, (d.get("display_name") or "").split(", Manaus")[0]
+        except Exception:
+            pass
+        try:
+            dados = _http_json("https://photon.komoot.io/api/?" + urlencode({
+                "q": f"{t}, Manaus", "limit": 3, "lat": LOJA_LAT, "lon": LOJA_LNG, "lang": "default",
+                "bbox": f"{o},{sul},{l},{n}",
+            }))
+            for f in (dados or {}).get("features", []):
+                lng, lat = f["geometry"]["coordinates"][:2]
+                if _dentro_de_manaus(float(lat), float(lng)):
+                    pr = f.get("properties", {})
+                    desc = ", ".join(x for x in (pr.get("name") or pr.get("street"), pr.get("district") or pr.get("suburb")) if x)
+                    return float(lat), float(lng), desc
+        except Exception:
+            pass
+    return None
+
+
+def distancia_rota_km(lat: float, lng: float) -> float:
+    """Distância pelas ruas, da loja até o cliente. Se o serviço de rotas falhar, estima pela linha reta."""
+    try:
+        dados = _http_json(
+            f"https://router.project-osrm.org/route/v1/driving/{LOJA_LNG},{LOJA_LAT};{lng},{lat}?overview=false",
+            timeout=5.0,
+        )
+        metros = float(dados["routes"][0]["distance"])
+        if metros > 0:
+            return round(metros / 1000.0, 1)
+    except Exception:
+        pass
+    return round(_haversine_km(LOJA_LAT, LOJA_LNG, lat, lng) * 1.35, 1)
+
+
+def _assinatura_cotacao(endereco: str, faixa_id: str, km: float) -> str:
+    base = f"{re.sub(r'[^a-z0-9]', '', (endereco or '').lower())}|{faixa_id}|{km:.1f}"
+    return hmac.new(_chave_secreta(), base.encode("utf-8"), hashlib.sha256).hexdigest()[:24]
+
+
+def handle_public_taxa_entrega(body: dict):
+    endereco = (body.get("endereco") or "").strip()
+    if len(endereco) < 6:
+        raise APIError("Digite o endereço com rua, número e bairro.")
+    achado = geocodificar_endereco(endereco)
+    if not achado:
+        return {"encontrado": False}
+    lat, lng, descricao = achado
+    km = distancia_rota_km(lat, lng)
+    fid = faixa_por_distancia(km)
+    faixa = FAIXAS_ENTREGA[fid]
+    return {
+        "encontrado": True,
+        "distancia_km": km,
+        "faixa_entrega": fid,
+        "rotulo": faixa["rotulo"],
+        "valor": faixa["valor"],
+        "local": descricao,
+        "cotacao": _assinatura_cotacao(endereco, fid, km),
+    }
+
+
 SESSAO_HORAS = 12
 FUSO_LOJA_HORAS = -4  # Manaus (UTC-4, sem horário de verão)
 
@@ -881,12 +1032,15 @@ def handle_public_cardapio():
         ).fetchall()
     )
     conn.close()
+    for p in produtos:
+        p["qtd_sabores"] = sabores_necessarios(p.get("nome"), p.get("categoria"))
     return {
         "loja": "Sorveteria Cone Mágico",
         "taxa_entrega_padrao": TAXA_ENTREGA_PADRAO,
         "faixas_entrega": [
             {"id": k, "rotulo": v["rotulo"], "valor": v["valor"]} for k, v in FAIXAS_ENTREGA.items()
         ],
+        "sabores": SABORES,
         "tempo_estimado": "25 a 40 min",
         "produtos": produtos,
     }
@@ -915,7 +1069,7 @@ def handle_public_criar_pedido(body: dict):
     # Preço, nome e taxa vêm SEMPRE do cardápio do servidor — nunca do navegador do cliente
     catalogo = {
         int(p["id"]): p
-        for p in rows_to_list(conn.execute("SELECT id, nome, preco, disponivel FROM produtos").fetchall())
+        for p in rows_to_list(conn.execute("SELECT id, nome, categoria, preco, disponivel FROM produtos").fetchall())
     }
 
     subtotal = 0.0
@@ -941,19 +1095,31 @@ def handle_public_criar_pedido(body: dict):
             raise APIError("Um item do carrinho não está mais disponível. Atualize a página e monte o pedido novamente.")
         preco = float(prod["preco"])
         nome_prod = prod["nome"]
+        n_sab = sabores_necessarios(nome_prod, prod.get("categoria"))
+        sabores_item = []
+        if n_sab:
+            bruto = it.get("sabores") if isinstance(it.get("sabores"), list) else []
+            sabores_item = [str(x).strip() for x in bruto if str(x).strip() in SABORES_VALIDOS]
+            if len(sabores_item) != n_sab or len(bruto) != n_sab:
+                conn.close()
+                raise APIError(
+                    f"Escolha {n_sab} sabor{'es' if n_sab > 1 else ''} para \"{nome_prod}\". "
+                    "Tire o item da sacola e adicione de novo escolhendo os sabores."
+                )
         sub = round(q * preco, 2)
         subtotal += sub
         qtd_sorvetes += q
-        resumo_parts.append(f"{q}x {nome_prod}")
-        itens_clean.append(
-            {
-                "produto_id": pid,
-                "nome": nome_prod,
-                "qtd": q,
-                "preco": preco,
-                "subtotal": sub,
-            }
-        )
+        resumo_parts.append(f"{q}x {nome_prod}" + (f" ({', '.join(sabores_item)})" if sabores_item else ""))
+        item_limpo = {
+            "produto_id": pid,
+            "nome": nome_prod,
+            "qtd": q,
+            "preco": preco,
+            "subtotal": sub,
+        }
+        if sabores_item:
+            item_limpo["sabores"] = sabores_item
+        itens_clean.append(item_limpo)
 
     if not itens_clean:
         conn.close()
@@ -966,9 +1132,19 @@ def handle_public_criar_pedido(body: dict):
         faixa = FAIXAS_ENTREGA.get(str(body.get("faixa_entrega") or ""))
         if not faixa:
             conn.close()
-            raise APIError("Escolha a distância da entrega (até 2 km, de 3 a 5 km ou de 6 a 8 km).")
+            raise APIError("Informe o endereço para calcular a taxa de entrega, ou escolha a distância.")
+        fid = str(body.get("faixa_entrega"))
         taxa_entrega = faixa["valor"]
-        observacoes = (f"[Distância 99: {faixa['rotulo']}] " + observacoes).strip()
+        try:
+            km_cot = round(float(body.get("distancia_km") or 0), 1)
+        except (ValueError, TypeError):
+            km_cot = 0.0
+        cot = str(body.get("cotacao") or "")
+        if cot and km_cot > 0 and hmac.compare_digest(cot, _assinatura_cotacao(endereco, fid, km_cot)):
+            marca = f"[Entrega: {str(km_cot).replace('.', ',')} km calculados pelo mapa — {faixa['rotulo']}]"
+        else:
+            marca = f"[Entrega: cliente escolheu \"{faixa['rotulo']}\" — conferir distância antes de despachar]"
+        observacoes = (marca + " " + observacoes).strip()
     valor_total = round(subtotal + taxa_entrega, 2)
     if troco_para and troco_para < valor_total:
         conn.close()
@@ -1118,7 +1294,7 @@ def handle_public_consultar_pedido(codigo: str, token: str = ""):
                v.subtotal, v.taxa_entrega, v.valor_total, v.forma_pagamento, v.troco_para,
                v.modalidade_entrega, v.endereco_entrega, v.status, v.status_delivery,
                v.entregador_info, v.link_rastreio_99, v.motoboy_lat, v.motoboy_lng, v.motoboy_atualizado_em,
-               COALESCE(v.loja_lat, -23.55052) as loja_lat, COALESCE(v.loja_lng, -46.633308) as loja_lng,
+               -3.0791912 as loja_lat, -60.0014081 as loja_lng,
                v.observacoes,
                COALESCE(c.nome, v.cliente_nome_avulso) as cliente_nome,
                COALESCE(c.telefone, v.cliente_telefone) as cliente_telefone,
@@ -1678,6 +1854,8 @@ def dispatch_api(method: str, path: str, query: dict, body: dict, headers: dict)
     # Cardápio Digital Online (/pedir) — Rotas Públicas para Clientes (Taxa Zero)
     if path == "/api/public/cardapio" and method == "GET":
         return handle_public_cardapio()
+    if path == "/api/public/taxa-entrega" and method == "POST":
+        return handle_public_taxa_entrega(body)
     if path == "/api/public/pedido" and method == "POST":
         return handle_public_criar_pedido(body)
     m_pub_ped = re.match(r"^/api/public/pedido/([A-Za-z0-9\-]+)$", path)
