@@ -1122,7 +1122,12 @@ def handle_public_criar_pedido(body: dict):
         sub = round(q * preco, 2)
         subtotal += sub
         qtd_sorvetes += q
-        resumo_parts.append(f"{q}x {nome_prod}" + (f" ({', '.join(sabores_item)})" if sabores_item else ""))
+        obs_item = re.sub(r"\s+", " ", str(it.get("obs") or "")).strip()[:140]
+        resumo_parts.append(
+            f"{q}x {nome_prod}"
+            + (f" ({', '.join(sabores_item)})" if sabores_item else "")
+            + (f" [obs: {obs_item}]" if obs_item else "")
+        )
         item_limpo = {
             "produto_id": pid,
             "nome": nome_prod,
@@ -1132,6 +1137,8 @@ def handle_public_criar_pedido(body: dict):
         }
         if sabores_item:
             item_limpo["sabores"] = sabores_item
+        if obs_item:
+            item_limpo["obs"] = obs_item
         itens_clean.append(item_limpo)
 
     if not itens_clean:
