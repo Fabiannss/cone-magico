@@ -579,6 +579,26 @@
             justify-content: center;
         }
 
+        .sab-slots { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.2rem 0 0.9rem; }
+        .sab-slot { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 0.85rem; border-radius: 22px; border: 2px dashed #bae6fd; background: #f8fafc; color: #64748b; font-size: 0.85rem; font-weight: 600; font-family: inherit; cursor: default; }
+        .sab-slot.cheio { border: 2px solid #0369a1; background: #e0f2fe; color: #075985; cursor: pointer; }
+        .sab-slot .sab-bola { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
+        .sab-grupo-titulo { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0.9rem 0 0.45rem; }
+        .sab-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+        .sab-chip { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 0.85rem; border-radius: 22px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 0.88rem; font-weight: 600; font-family: inherit; cursor: pointer; }
+        .sab-chip:hover { border-color: #0369a1; }
+        .sab-chip.escolhido { border-color: #0369a1; background: #e0f2fe; color: #075985; }
+        .sab-chip:disabled { opacity: 0.45; cursor: not-allowed; }
+        .sab-chip .sab-bola { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+        .sab-chip .sab-vezes { background: #0369a1; color: #fff; border-radius: 10px; padding: 0 0.4rem; font-size: 0.75rem; }
+        .sab-ajuda { font-size: 0.85rem; color: #475569; margin: 0 0 0.6rem; line-height: 1.45; }
+        .sab-rodape { position: sticky; bottom: 0.6rem; margin-top: 1rem; }
+        .cart-item-sabores { display: block; font-size: 0.78rem; color: #475569; line-height: 1.35; margin: 0.1rem 0; }
+        .taxa-resultado { margin-top: 0.5rem; border-radius: 12px; padding: 0.65rem 0.8rem; font-size: 0.86rem; line-height: 1.45; }
+        .taxa-resultado.ok { background: #ecfdf5; border: 1px solid #6ee7b7; color: #064e3b; }
+        .taxa-resultado.falha { background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; }
+        .taxa-resultado.calc { background: #f0f9ff; border: 1px solid #bae6fd; color: #0c4a6e; }
+        .taxa-resultado button { background: none; border: 0; padding: 0; color: #0369a1; font-weight: 700; text-decoration: underline; cursor: pointer; font-family: inherit; font-size: inherit; }
         .aviso-taxa { background: #fffbeb; border: 1px solid #fcd34d; border-left: 5px solid #f59e0b; border-radius: 12px; padding: 0.75rem 0.9rem; margin: 0.4rem 0 0.8rem; font-size: 0.84rem; line-height: 1.5; color: #78350f; }
         .aviso-taxa strong { color: #92400e; }
         .aviso-taxa ul { margin: 0.35rem 0 0.35rem 1.1rem; padding: 0; }
@@ -872,21 +892,23 @@
                     <input type="tel" id="cli-whatsapp-input" class="input-text" required placeholder="(11) 99999-9999">
                 </div>
 
-                <div class="form-row" id="row-faixa-entrega">
-                    <label>Distância da entrega (taxa da 99) *</label>
+                <div class="form-row" id="row-endereco-entrega">
+                    <label for="cli-endereco-input">Endereço de entrega (rua, número e bairro) *</label>
+                    <input type="text" id="cli-endereco-input" class="input-text" autocomplete="street-address" placeholder="Ex: Rua Rio Içá, 120 - Nossa Senhora das Graças"
+                        oninput="ClienteApp.enderecoDigitado()" onchange="ClienteApp.calcularTaxaPeloEndereco()">
+                    <div class="taxa-resultado calc" id="taxa-resultado">Digite o endereço e a taxa de entrega aparece aqui.</div>
+                </div>
+
+                <div class="form-row" id="row-faixa-entrega" style="display:none;">
+                    <label for="cli-faixa-select">Distância da loja até você *</label>
                     <select id="cli-faixa-select" class="input-text" onchange="ClienteApp.escolherFaixa()">
                         <option value="">Escolha a distância até você</option>
                     </select>
                 </div>
 
-                <div class="form-row" id="row-endereco-entrega">
-                    <label>Endereço Completo de Entrega (Rua, Número, Bairro) *</label>
-                    <input type="text" id="cli-endereco-input" class="input-text" placeholder="Ex: Av. Paulista, 1500, Apto 42 - Bela Vista">
-                </div>
-
                 <div class="form-row">
-                    <label>Sabores dos Sorvetes / Detalhes do Pedido</label>
-                    <input type="text" id="cli-obs-input" class="input-text" placeholder="Ex: Sabores Flocos e Chocolate, sem amendoim...">
+                    <label>Observações (opcional)</label>
+                    <input type="text" id="cli-obs-input" class="input-text" placeholder="Ex: sem cobertura, tocar o interfone...">
                 </div>
 
                 <div class="form-row">
@@ -925,7 +947,7 @@
                     </div>
                     <div class="summary-line">
                         <span id="taxa-label-txt">🛵 Taxa de entrega:</span>
-                        <strong id="taxa-val-txt">Escolha a distância</strong>
+                        <strong id="taxa-val-txt">Informe o endereço</strong>
                     </div>
                     <div class="summary-line total">
                         <span>Total a pagar:</span>
@@ -941,6 +963,21 @@
     </div>
 
     <!-- MODAL DE RASTREAMENTO COM MAPA GPS AO VIVO -->
+    <div class="modal-overlay" id="modal-sabores">
+        <div class="modal-card">
+            <div class="modal-top-bar">
+                <h3 class="modal-title" id="sab-titulo">Escolha os sabores</h3>
+                <button type="button" class="btn-modal-close" aria-label="Fechar" onclick="ClienteApp.fecharModalSabores()">✕</button>
+            </div>
+            <p class="sab-ajuda" id="sab-ajuda"></p>
+            <div class="sab-slots" id="sab-slots"></div>
+            <div id="sab-lista"></div>
+            <div class="sab-rodape">
+                <button type="button" id="sab-confirmar" class="btn-submit-order" onclick="ClienteApp.confirmarSabores()">Adicionar à sacola</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modal-rastreio">
         <div class="modal-card">
             <div class="modal-top-bar">
@@ -964,8 +1001,13 @@
             carrinho: [],
             categoriaSelecionada: "",
             modalidadeEntrega: "99Entrega / Motoboy",
-            faixas: [{id:"ate2",rotulo:"Até 2 km",valor:5},{id:"ate5",rotulo:"De 3 a 5 km",valor:8},{id:"ate8",rotulo:"De 6 a 8 km",valor:12}],
+            faixas: [{id:"ate2",rotulo:"Até 2 km",valor:5},{id:"ate5",rotulo:"De 2 a 5 km",valor:8},{id:"ate8",rotulo:"Acima de 5 km",valor:12}],
             faixaEscolhida: "",
+            cotacao: null,          // resultado do cálculo automático pelo endereço
+            enderecoCalculado: "",
+            timerEndereco: null,
+            sabores: [],
+            saboresEscolhendo: null, // { produto, escolhidos: [] }
             taxaAtual() {
                 if (this.modalidadeEntrega === "Retirada no Balcão") return 0;
                 const f = this.faixas.find((x) => x.id === this.faixaEscolhida);
@@ -973,6 +1015,7 @@
             },
             ultimoPedidoSalvo: localStorage.getItem("conemagico_last_order") || "",
             pollingTimer: null,
+            modoManualFaixa: false,
             leafletMap: null,
             motoboyMarker: null,
             lojaMarker: null,
@@ -986,6 +1029,7 @@
                     const data = await res.json();
                     this.cardapio = data.produtos || [];
                     if (Array.isArray(data.faixas_entrega) && data.faixas_entrega.length) this.faixas = data.faixas_entrega;
+                    this.sabores = Array.isArray(data.sabores) ? data.sabores : [];
                     const sel = document.getElementById("cli-faixa-select");
                     sel.innerHTML = '<option value="">Escolha a distância até você</option>' +
                         this.faixas.map((f) => `<option value="${f.id}">${f.rotulo} — ${this.formatBRL(f.valor)}</option>`).join("");
@@ -1060,7 +1104,7 @@
                     const novas = todas.filter(w => !doNome.has(w));
                     return todas.length && novas.length / todas.length >= 0.4 ? p.sabor_detalhe : "";
                 };
-                const qtdNaSacola = (id) => (this.carrinho.find(i => i.produto_id === id) || {}).qtd || 0;
+                const qtdNaSacola = (id) => this.carrinho.filter(i => i.produto_id === id).reduce((a, i) => a + i.qtd, 0);
                 const grupos = this.categoriasDoCardapio()
                     .map(cat => ({ cat, itens: produtosFiltrados.filter(p => p.categoria === cat) }))
                     .filter(g => g.itens.length > 0);
@@ -1076,7 +1120,7 @@
                                     ${ConeIlustra.produto(p, 48)}
                                     <div class="menu-item-texto">
                                         <span class="menu-item-nome">${nomeCurto(p.nome)}</span>
-                                        ${detalheUtil(p) ? `<span class="menu-item-detalhe">${detalheUtil(p)}</span>` : ""}
+                                        ${p.qtd_sabores ? `<span class="menu-item-detalhe">Você escolhe ${p.qtd_sabores === 1 ? "o sabor" : "os " + p.qtd_sabores + " sabores"}</span>` : (detalheUtil(p) ? `<span class="menu-item-detalhe">${detalheUtil(p)}</span>` : "")}
                                     </div>
                                     <span class="menu-item-preco">${this.formatBRL(p.preco)}</span>
                                     <button type="button" class="btn-add-item ${q ? "tem-na-sacola" : ""}" aria-label="Adicionar ${p.nome} à sacola" onclick="ClienteApp.adicionarAoCarrinho(${p.id})">
@@ -1092,7 +1136,16 @@
             adicionarAoCarrinho(id) {
                 const produto = this.cardapio.find(p => p.id === id);
                 if (!produto) return;
-                const itemExistente = this.carrinho.find(i => i.produto_id === id);
+                if (produto.qtd_sabores > 0 && this.sabores.length) {
+                    this.abrirModalSabores(produto);
+                    return;
+                }
+                this.colocarNaSacola(produto, []);
+            },
+
+            colocarNaSacola(produto, sabores) {
+                const chave = sabores.slice().sort().join("|");
+                const itemExistente = this.carrinho.find(i => i.produto_id === produto.id && (i.sabores || []).slice().sort().join("|") === chave);
                 if (itemExistente) {
                     itemExistente.qtd += 1;
                 } else {
@@ -1102,10 +1155,88 @@
                         categoria: produto.categoria,
                         preco: Number(produto.preco),
                         qtd: 1,
+                        sabores: sabores,
                     });
                 }
                 this.atualizarBarraFlutuante();
                 this.renderizarCardapio();
+            },
+
+            corDoSabor(nome) {
+                const n = nome.toLowerCase();
+                if (/choco|trufado|sonho|serenata|galaxy|cookies|nutella/.test(n)) return n.includes("menta") ? "#86efac" : (n.includes("pistache") ? "#a3b86c" : "#7c4a2d");
+                if (/morango|amarena|chiclete/.test(n)) return "#f472b6";
+                if (/açaí|acai|passas|vinho/.test(n)) return "#7c3aed";
+                if (/maracuj|milho|tucum|caramelo|doce de leite/.test(n)) return "#f59e0b";
+                return "#fde68a";
+            },
+
+            abrirModalSabores(produto) {
+                this.saboresEscolhendo = { produto, escolhidos: [] };
+                document.getElementById("sab-titulo").textContent = produto.nome;
+                document.getElementById("modal-sabores").classList.add("open");
+                this.renderizarSabores();
+                document.querySelector("#modal-sabores .modal-card").scrollTop = 0;
+            },
+
+            fecharModalSabores() {
+                document.getElementById("modal-sabores").classList.remove("open");
+                this.saboresEscolhendo = null;
+            },
+
+            tocarSabor(nome) {
+                const e = this.saboresEscolhendo;
+                if (!e) return;
+                const max = e.produto.qtd_sabores;
+                if (max === 1) e.escolhidos = [nome];
+                else if (e.escolhidos.length < max) e.escolhidos.push(nome);
+                this.renderizarSabores();
+            },
+
+            tirarSabor(idx) {
+                const e = this.saboresEscolhendo;
+                if (!e) return;
+                e.escolhidos.splice(idx, 1);
+                this.renderizarSabores();
+            },
+
+            renderizarSabores() {
+                const e = this.saboresEscolhendo;
+                if (!e) return;
+                const max = e.produto.qtd_sabores;
+                const faltam = max - e.escolhidos.length;
+                const esc = (t) => t.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+                document.getElementById("sab-ajuda").textContent = max === 1
+                    ? "Toque no sabor que você quer."
+                    : `Toque em ${max} sabores, um para cada bola. Para repetir um sabor, toque nele de novo. Para trocar, toque no sabor escolhido aqui em cima.`;
+                document.getElementById("sab-slots").innerHTML = Array.from({ length: max }, (_, i) => {
+                    const s = e.escolhidos[i];
+                    return s
+                        ? `<button type="button" class="sab-slot cheio" aria-label="Tirar ${esc(s)}" onclick="ClienteApp.tirarSabor(${i})"><span class="sab-bola" style="background:${this.corDoSabor(s)}"></span>${esc(s)} <span aria-hidden="true">✕</span></button>`
+                        : `<span class="sab-slot">${max === 1 ? "Sabor" : "Bola " + (i + 1)}</span>`;
+                }).join("");
+                document.getElementById("sab-lista").innerHTML = this.sabores.map(g => `
+                    <h4 class="sab-grupo-titulo">${esc(g.grupo)}</h4>
+                    <div class="sab-chips">
+                        ${g.itens.map(nome => {
+                            const vezes = e.escolhidos.filter(x => x === nome).length;
+                            const cheio = max > 1 && faltam === 0;
+                            return `<button type="button" class="sab-chip ${vezes ? "escolhido" : ""}" ${cheio ? "disabled" : ""} data-sabor="${esc(nome)}" onclick="ClienteApp.tocarSabor(this.dataset.sabor)"><span class="sab-bola" style="background:${this.corDoSabor(nome)}"></span>${esc(nome)}${vezes > 1 ? ` <span class="sab-vezes">${vezes}x</span>` : ""}</button>`;
+                        }).join("")}
+                    </div>`).join("");
+                const btn = document.getElementById("sab-confirmar");
+                btn.disabled = faltam > 0;
+                btn.style.opacity = faltam > 0 ? "0.55" : "1";
+                btn.textContent = faltam > 0
+                    ? (faltam === 1 ? "Falta escolher 1 sabor" : `Faltam ${faltam} sabores`)
+                    : `Adicionar à sacola — ${this.formatBRL(e.produto.preco)}`;
+            },
+
+            confirmarSabores() {
+                const e = this.saboresEscolhendo;
+                if (!e || e.escolhidos.length !== e.produto.qtd_sabores) return;
+                this.colocarNaSacola(e.produto, e.escolhidos.slice());
+                this.fecharModalSabores();
             },
 
             alterarQuantidadeItem(idx, delta) {
@@ -1151,12 +1282,86 @@
                 document.getElementById("btn-toggle-retirada").classList.toggle("active", mod === "Retirada no Balcão");
                 document.getElementById("row-endereco-entrega").style.display = mod === "Retirada no Balcão" ? "none" : "block";
                 document.getElementById("endereco-retirada").style.display = mod === "Retirada no Balcão" ? "block" : "none";
-                document.getElementById("row-faixa-entrega").style.display = mod === "Retirada no Balcão" ? "none" : "block";
+                document.getElementById("row-faixa-entrega").style.display = (mod !== "Retirada no Balcão" && this.modoManualFaixa) ? "block" : "none";
                 this.renderizarItensCheckout();
             },
 
             escolherFaixa() {
                 this.faixaEscolhida = document.getElementById("cli-faixa-select").value;
+                this.cotacao = null;
+                this.renderizarItensCheckout();
+            },
+
+            mostrarResultadoTaxa(tipo, html) {
+                const el = document.getElementById("taxa-resultado");
+                el.className = "taxa-resultado " + tipo;
+                el.innerHTML = html;
+            },
+
+            usarFaixaManual(mostrar) {
+                this.modoManualFaixa = mostrar;
+                document.getElementById("row-faixa-entrega").style.display = mostrar ? "block" : "none";
+            },
+
+            enderecoDigitado() {
+                clearTimeout(this.timerEndereco);
+                const v = document.getElementById("cli-endereco-input").value.trim();
+                if (v === this.enderecoCalculado) return;
+                // Endereço mudou: a taxa calculada antes não vale mais
+                if (this.cotacao) {
+                    this.cotacao = null;
+                    this.faixaEscolhida = "";
+                    document.getElementById("cli-faixa-select").value = "";
+                    this.renderizarItensCheckout();
+                }
+                if (v.length >= 10) this.timerEndereco = setTimeout(() => this.calcularTaxaPeloEndereco(), 1300);
+            },
+
+            async calcularTaxaPeloEndereco() {
+                clearTimeout(this.timerEndereco);
+                const endereco = document.getElementById("cli-endereco-input").value.trim();
+                if (this.modalidadeEntrega === "Retirada no Balcão" || endereco.length < 6) return false;
+                if (endereco === this.enderecoCalculado && (this.cotacao || this.modoManualFaixa)) return !!this.cotacao;
+                this.enderecoCalculado = endereco;
+                this.mostrarResultadoTaxa("calc", "Calculando a distância até você...");
+                let data = null;
+                try {
+                    const resp = await fetch("/api/public/taxa-entrega", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ endereco }),
+                    });
+                    data = await resp.json();
+                    if (!resp.ok) data = null;
+                } catch (e) { data = null; }
+                // O cliente continuou digitando enquanto a resposta chegava
+                if (document.getElementById("cli-endereco-input").value.trim() !== endereco) return false;
+
+                if (data && data.encontrado) {
+                    this.cotacao = data;
+                    this.faixaEscolhida = data.faixa_entrega;
+                    document.getElementById("cli-faixa-select").value = data.faixa_entrega;
+                    this.usarFaixaManual(false);
+                    const km = String(data.distancia_km).replace(".", ",");
+                    this.mostrarResultadoTaxa("ok", `<strong>${km} km da loja</strong>${data.local ? " (" + data.local.replace(/</g, "&lt;") + ")" : ""}. Taxa de entrega: <strong>${this.formatBRL(data.valor)}</strong>.<br><button type="button" onclick="ClienteApp.trocarParaManual()">O local está errado? Escolher a distância</button>`);
+                    this.renderizarItensCheckout();
+                    return true;
+                }
+                this.cotacao = null;
+                this.faixaEscolhida = "";
+                document.getElementById("cli-faixa-select").value = "";
+                this.usarFaixaManual(true);
+                this.mostrarResultadoTaxa("falha", "Não achamos esse endereço no mapa. Confira a rua e o bairro, ou escolha abaixo a distância da loja até você. A loja confere antes de enviar.");
+                this.renderizarItensCheckout();
+                return false;
+            },
+
+            trocarParaManual() {
+                this.cotacao = null;
+                this.faixaEscolhida = "";
+                document.getElementById("cli-faixa-select").value = "";
+                this.usarFaixaManual(true);
+                this.mostrarResultadoTaxa("falha", "Escolha abaixo a distância da loja até você. A loja confere antes de enviar.");
                 this.renderizarItensCheckout();
             },
 
@@ -1185,6 +1390,7 @@
                         ${ConeIlustra.produto(it, 40)}
                         <div style="flex:1; min-width:0;">
                             <span class="cart-item-nome">${it.nome}</span>
+                            ${(it.sabores || []).length ? `<span class="cart-item-sabores">${it.sabores.join(", ")}</span>` : ""}
                             <span class="cart-item-valor">${this.formatBRL(it.preco * it.qtd)}${it.qtd > 1 ? ` <small>(${this.formatBRL(it.preco)} cada)</small>` : ""}</span>
                         </div>
                         <div class="qty-controller">
@@ -1198,17 +1404,17 @@
                 const subtotal = this.carrinho.reduce((acc, i) => acc + i.preco * i.qtd, 0);
                 const taxa = this.taxaAtual();
                 document.getElementById("subtotal-val-txt").textContent = this.formatBRL(subtotal);
-                document.getElementById("taxa-val-txt").textContent = this.modalidadeEntrega === "Retirada no Balcão" ? "Grátis (Balcão)" : (taxa === 0 ? "Escolha a distância" : this.formatBRL(taxa));
+                document.getElementById("taxa-val-txt").textContent = this.modalidadeEntrega === "Retirada no Balcão" ? "Grátis (Balcão)" : (taxa === 0 ? "Informe o endereço" : this.formatBRL(taxa));
                 document.getElementById("total-val-txt").textContent = this.formatBRL(subtotal + taxa);
 
                 const retirada = this.modalidadeEntrega === "Retirada no Balcão";
                 const faixa = this.faixas.find((x) => x.id === this.faixaEscolhida);
-                document.getElementById("taxa-label-txt").textContent = retirada ? "🏪 Taxa de entrega:" : `🛵 Taxa de entrega${faixa ? " (" + faixa.rotulo + ")" : ""}:`;
+                document.getElementById("taxa-label-txt").textContent = retirada ? "🏪 Taxa de entrega:" : `🛵 Taxa de entrega${this.cotacao ? " (" + String(this.cotacao.distancia_km).replace(".", ",") + " km)" : (faixa ? " (" + faixa.rotulo + ")" : "")}:`;
                 const aviso = document.getElementById("aviso-taxa");
                 aviso.classList.toggle("aviso-retirada", retirada);
                 aviso.innerHTML = retirada
                     ? `<strong>Retirada no balcão:</strong> sem taxa de entrega. Você paga somente o valor dos sorvetes: <strong>${this.formatBRL(subtotal)}</strong>.`
-                    : `<strong>⚠️ Aviso:</strong> o valor dos sorvetes e a taxa de entrega são cobrados <strong>separadamente</strong>. A taxa depende da distância até você:<ul>${this.faixas.map((f) => `<li>${f.rotulo}: <strong>${this.formatBRL(f.valor)}</strong></li>`).join("")}</ul>Sorvetes <strong>${this.formatBRL(subtotal)}</strong> + taxa <strong>${taxa ? this.formatBRL(taxa) : "(escolha a distância)"}</strong>${taxa ? ` = total <strong>${this.formatBRL(subtotal + taxa)}</strong>` : ""}.`;
+                    : `<strong>⚠️ Aviso:</strong> o valor dos sorvetes e a taxa de entrega são cobrados <strong>separadamente</strong>. A taxa é calculada pela distância da loja até o seu endereço:<ul>${this.faixas.map((f) => `<li>${f.rotulo}: <strong>${this.formatBRL(f.valor)}</strong></li>`).join("")}</ul>Sorvetes <strong>${this.formatBRL(subtotal)}</strong> + taxa <strong>${taxa ? this.formatBRL(taxa) : "(informe o endereço)"}</strong>${taxa ? ` = total <strong>${this.formatBRL(subtotal + taxa)}</strong>` : ""}.`;
                 const pixVal = document.getElementById("pix-valor-pagar");
                 if (pixVal) pixVal.textContent = (retirada || taxa) ? this.formatBRL(subtotal + taxa) : this.formatBRL(subtotal) + " + taxa";
                 this.rotuloBotaoEnviar = (retirada || taxa) ? `✅ Enviar Pedido — ${this.formatBRL(subtotal + taxa)}` : "✅ Enviar Pedido para o Caixa da Sorveteria";
@@ -1219,7 +1425,23 @@
             async enviarPedidoOnline() {
                 const btn = document.getElementById("btn-enviar-final");
                 if (this.modalidadeEntrega !== "Retirada no Balcão" && !this.faixaEscolhida) {
-                    alert("Escolha a distância da entrega para calcular a taxa.");
+                    const endereco = document.getElementById("cli-endereco-input").value.trim();
+                    if (endereco.length < 6) {
+                        alert("Digite o endereço de entrega com rua, número e bairro.");
+                        document.getElementById("cli-endereco-input").focus();
+                        return;
+                    }
+                    if (!this.modoManualFaixa) {
+                        btn.disabled = true;
+                        btn.textContent = "⏳ Calculando a taxa de entrega...";
+                        const ok = await this.calcularTaxaPeloEndereco();
+                        btn.disabled = false;
+                        btn.textContent = this.rotuloBotaoEnviar || "✅ Enviar Pedido";
+                        document.getElementById("taxa-resultado").scrollIntoView({ block: "center", behavior: "smooth" });
+                        if (ok) alert("Calculamos a taxa de entrega. Confira o total e toque em Enviar Pedido de novo.");
+                        return;
+                    }
+                    alert("Escolha a distância da loja até você para calcular a taxa.");
                     document.getElementById("cli-faixa-select").focus();
                     return;
                 }
@@ -1236,6 +1458,8 @@
                         forma_pagamento: document.getElementById("cli-pagamento-select").value,
                         troco_para: document.getElementById("cli-troco-input").value || 0,
                         faixa_entrega: this.modalidadeEntrega === "Retirada no Balcão" ? "" : this.faixaEscolhida,
+                        distancia_km: this.cotacao ? this.cotacao.distancia_km : 0,
+                        cotacao: this.cotacao ? this.cotacao.cotacao : "",
                         itens: this.carrinho,
                     };
 
@@ -1394,8 +1618,8 @@
                 let lojaLat = Number(pedido.loja_lat);
                 let lojaLng = Number(pedido.loja_lng);
                 if (!lojaLat || !lojaLng || lojaLat < -10) {
-                    lojaLat = -3.0800;
-                    lojaLng = -60.0110;
+                    lojaLat = -3.0791912;
+                    lojaLng = -60.0014081;
                 }
 
                 // A tela do pedido é redesenhada a cada consulta: se o mapa antigo
