@@ -579,20 +579,33 @@
             justify-content: center;
         }
 
-        .sab-slots { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.2rem 0 0.9rem; }
-        .sab-slot { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 0.85rem; border-radius: 22px; border: 2px dashed #bae6fd; background: #f8fafc; color: #64748b; font-size: 0.85rem; font-weight: 600; font-family: inherit; cursor: default; }
-        .sab-slot.cheio { border: 2px solid #0369a1; background: #e0f2fe; color: #075985; cursor: pointer; }
-        .sab-slot .sab-bola { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
-        .sab-grupo-titulo { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0.9rem 0 0.45rem; }
-        .sab-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-        .sab-chip { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 0.85rem; border-radius: 22px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 0.88rem; font-weight: 600; font-family: inherit; cursor: pointer; }
-        .sab-chip:hover { border-color: #0369a1; }
-        .sab-chip.escolhido { border-color: #0369a1; background: #e0f2fe; color: #075985; }
-        .sab-chip:disabled { opacity: 0.45; cursor: not-allowed; }
-        .sab-chip .sab-bola { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
-        .sab-chip .sab-vezes { background: #0369a1; color: #fff; border-radius: 10px; padding: 0 0.4rem; font-size: 0.75rem; }
-        .sab-ajuda { font-size: 0.85rem; color: #475569; margin: 0 0 0.6rem; line-height: 1.45; }
-        .sab-rodape { position: sticky; bottom: 0.6rem; margin-top: 1rem; }
+        #modal-sabores .modal-card { overflow-x: hidden; }
+        .sab-preco { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #0369a1; margin: -0.3rem 0 0.8rem; }
+        .sab-head { position: sticky; top: -1.4rem; z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: #f1f5f9; margin: 0 -1.25rem; padding: 0.75rem 1.25rem; }
+        .sab-head-titulo { font-size: 0.98rem; font-weight: 700; color: #0f172a; display: block; }
+        .sab-head-sub { font-size: 0.8rem; color: #475569; }
+        .sab-badge { flex-shrink: 0; border-radius: 8px; padding: 0.3rem 0.6rem; font-size: 0.72rem; font-weight: 700; background: #334155; color: #ffffff; }
+        .sab-badge.ok { background: #047857; }
+        .sab-grupo-titulo { font-size: 0.8rem; font-weight: 700; color: #475569; margin: 1rem 0 0.1rem; }
+        .sab-linha { display: flex; align-items: center; gap: 0.7rem; width: 100%; min-height: 56px; padding: 0.35rem 0; border: 0; border-bottom: 1px solid #e2e8f0; background: none; text-align: left; font-family: inherit; color: #0f172a; }
+        button.sab-linha { cursor: pointer; }
+        .sab-bola { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; box-shadow: inset -3px -3px 0 rgba(0,0,0,0.08); }
+        .sab-nome { flex: 1; min-width: 0; font-size: 0.95rem; font-weight: 600; line-height: 1.25; }
+        .sab-radio { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #94a3b8; flex-shrink: 0; box-sizing: border-box; }
+        .sab-radio.marcado { border: 7px solid #0369a1; }
+        .sab-step { display: inline-flex; align-items: center; gap: 0.15rem; flex-shrink: 0; }
+        .sab-step button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: none; color: #0369a1; font-size: 1.55rem; font-weight: 600; line-height: 1; cursor: pointer; font-family: inherit; }
+        .sab-step button:disabled { color: #cbd5e1; cursor: not-allowed; }
+        .sab-step span { min-width: 18px; text-align: center; font-weight: 700; }
+        .sab-obs-label { display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 700; color: #0f172a; margin: 1.1rem 0 0.35rem; }
+        .sab-obs-label small { font-weight: 500; color: #64748b; }
+        .sab-rodape { position: sticky; bottom: -1.8rem; z-index: 5; display: flex; align-items: center; gap: 0.75rem; background: #ffffff; margin: 1rem -1.25rem -1.8rem; padding: 0.8rem 1.25rem 1.2rem; border-top: 1px solid #e2e8f0; }
+        .sab-rodape .sab-qtd { display: inline-flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; flex-shrink: 0; }
+        .sab-rodape .sab-qtd button { width: 44px; height: 48px; border: 0; background: none; color: #0369a1; font-size: 1.4rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .sab-rodape .sab-qtd button:disabled { color: #cbd5e1; }
+        .sab-rodape .sab-qtd span { min-width: 22px; text-align: center; font-weight: 700; }
+        .sab-add { flex: 1; min-height: 48px; border: 0; border-radius: 12px; background: #0369a1; color: #ffffff; font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; gap: 0.5rem; }
+        .sab-add:disabled { background: #cbd5e1; color: #475569; cursor: not-allowed; }
         .cart-item-sabores { display: block; font-size: 0.78rem; color: #475569; line-height: 1.35; margin: 0.1rem 0; }
         .taxa-resultado { margin-top: 0.5rem; border-radius: 12px; padding: 0.65rem 0.8rem; font-size: 0.86rem; line-height: 1.45; }
         .taxa-resultado.ok { background: #ecfdf5; border: 1px solid #6ee7b7; color: #064e3b; }
@@ -969,11 +982,24 @@
                 <h3 class="modal-title" id="sab-titulo">Escolha os sabores</h3>
                 <button type="button" class="btn-modal-close" aria-label="Fechar" onclick="ClienteApp.fecharModalSabores()">✕</button>
             </div>
-            <p class="sab-ajuda" id="sab-ajuda"></p>
-            <div class="sab-slots" id="sab-slots"></div>
+            <div class="sab-preco" id="sab-preco"></div>
+            <div class="sab-head">
+                <div>
+                    <span class="sab-head-titulo" id="sab-head-titulo"></span>
+                    <span class="sab-head-sub" id="sab-head-sub"></span>
+                </div>
+                <span class="sab-badge" id="sab-badge">Obrigatório</span>
+            </div>
             <div id="sab-lista"></div>
+            <label class="sab-obs-label" for="sab-obs">Alguma observação? <small id="sab-obs-cont">0/140</small></label>
+            <textarea id="sab-obs" class="input-text" rows="2" maxlength="140" placeholder="Ex: pouca calda, sem cobertura..." oninput="document.getElementById('sab-obs-cont').textContent = this.value.length + '/140'"></textarea>
             <div class="sab-rodape">
-                <button type="button" id="sab-confirmar" class="btn-submit-order" onclick="ClienteApp.confirmarSabores()">Adicionar à sacola</button>
+                <div class="sab-qtd">
+                    <button type="button" id="sab-qtd-menos" aria-label="Diminuir quantidade" onclick="ClienteApp.mudarQtdSabores(-1)">−</button>
+                    <span id="sab-qtd-num">1</span>
+                    <button type="button" aria-label="Aumentar quantidade" onclick="ClienteApp.mudarQtdSabores(1)">+</button>
+                </div>
+                <button type="button" id="sab-confirmar" class="sab-add" onclick="ClienteApp.confirmarSabores()"><span>Adicionar</span><span id="sab-total"></span></button>
             </div>
         </div>
     </div>
@@ -1143,19 +1169,20 @@
                 this.colocarNaSacola(produto, []);
             },
 
-            colocarNaSacola(produto, sabores) {
-                const chave = sabores.slice().sort().join("|");
-                const itemExistente = this.carrinho.find(i => i.produto_id === produto.id && (i.sabores || []).slice().sort().join("|") === chave);
+            colocarNaSacola(produto, sabores, qtd = 1, obs = "") {
+                const chave = sabores.slice().sort().join("|") + "#" + obs;
+                const itemExistente = this.carrinho.find(i => i.produto_id === produto.id && ((i.sabores || []).slice().sort().join("|") + "#" + (i.obs || "")) === chave);
                 if (itemExistente) {
-                    itemExistente.qtd += 1;
+                    itemExistente.qtd += qtd;
                 } else {
                     this.carrinho.push({
                         produto_id: produto.id,
                         nome: produto.nome,
                         categoria: produto.categoria,
                         preco: Number(produto.preco),
-                        qtd: 1,
+                        qtd: qtd,
                         sabores: sabores,
+                        obs: obs,
                     });
                 }
                 this.atualizarBarraFlutuante();
@@ -1172,8 +1199,10 @@
             },
 
             abrirModalSabores(produto) {
-                this.saboresEscolhendo = { produto, escolhidos: [] };
+                this.saboresEscolhendo = { produto, contagem: {}, qtd: 1 };
                 document.getElementById("sab-titulo").textContent = produto.nome;
+                document.getElementById("sab-obs").value = "";
+                document.getElementById("sab-obs-cont").textContent = "0/140";
                 document.getElementById("modal-sabores").classList.add("open");
                 this.renderizarSabores();
                 document.querySelector("#modal-sabores .modal-card").scrollTop = 0;
@@ -1184,19 +1213,30 @@
                 this.saboresEscolhendo = null;
             },
 
-            tocarSabor(nome) {
+            totalSaboresEscolhidos() {
+                const e = this.saboresEscolhendo;
+                return e ? Object.values(e.contagem).reduce((a, n) => a + n, 0) : 0;
+            },
+
+            mudarSabor(nome, delta) {
                 const e = this.saboresEscolhendo;
                 if (!e) return;
                 const max = e.produto.qtd_sabores;
-                if (max === 1) e.escolhidos = [nome];
-                else if (e.escolhidos.length < max) e.escolhidos.push(nome);
+                if (max === 1) {
+                    e.contagem = { [nome]: 1 };
+                } else {
+                    const atual = e.contagem[nome] || 0;
+                    if (delta > 0 && this.totalSaboresEscolhidos() >= max) return;
+                    const novo = Math.max(0, atual + delta);
+                    if (novo) e.contagem[nome] = novo; else delete e.contagem[nome];
+                }
                 this.renderizarSabores();
             },
 
-            tirarSabor(idx) {
+            mudarQtdSabores(delta) {
                 const e = this.saboresEscolhendo;
                 if (!e) return;
-                e.escolhidos.splice(idx, 1);
+                e.qtd = Math.min(50, Math.max(1, e.qtd + delta));
                 this.renderizarSabores();
             },
 
@@ -1204,38 +1244,49 @@
                 const e = this.saboresEscolhendo;
                 if (!e) return;
                 const max = e.produto.qtd_sabores;
-                const faltam = max - e.escolhidos.length;
+                const total = this.totalSaboresEscolhidos();
+                const completo = total === max;
                 const esc = (t) => t.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-                document.getElementById("sab-ajuda").textContent = max === 1
-                    ? "Toque no sabor que você quer."
-                    : `Toque em ${max} sabores, um para cada bola. Para repetir um sabor, toque nele de novo. Para trocar, toque no sabor escolhido aqui em cima.`;
-                document.getElementById("sab-slots").innerHTML = Array.from({ length: max }, (_, i) => {
-                    const s = e.escolhidos[i];
-                    return s
-                        ? `<button type="button" class="sab-slot cheio" aria-label="Tirar ${esc(s)}" onclick="ClienteApp.tirarSabor(${i})"><span class="sab-bola" style="background:${this.corDoSabor(s)}"></span>${esc(s)} <span aria-hidden="true">✕</span></button>`
-                        : `<span class="sab-slot">${max === 1 ? "Sabor" : "Bola " + (i + 1)}</span>`;
-                }).join("");
+                document.getElementById("sab-preco").textContent = this.formatBRL(e.produto.preco);
+                document.getElementById("sab-head-titulo").textContent = max === 1 ? "Escolha o sabor" : `Escolha ${max} sabores`;
+                document.getElementById("sab-head-sub").textContent = max === 1
+                    ? "Escolha 1 opção"
+                    : `${total} de ${max} escolhidos. Pode repetir o mesmo sabor.`;
+                const badge = document.getElementById("sab-badge");
+                badge.textContent = completo ? "✓ Completo" : "Obrigatório";
+                badge.classList.toggle("ok", completo);
+
                 document.getElementById("sab-lista").innerHTML = this.sabores.map(g => `
                     <h4 class="sab-grupo-titulo">${esc(g.grupo)}</h4>
-                    <div class="sab-chips">
-                        ${g.itens.map(nome => {
-                            const vezes = e.escolhidos.filter(x => x === nome).length;
-                            const cheio = max > 1 && faltam === 0;
-                            return `<button type="button" class="sab-chip ${vezes ? "escolhido" : ""}" ${cheio ? "disabled" : ""} data-sabor="${esc(nome)}" onclick="ClienteApp.tocarSabor(this.dataset.sabor)"><span class="sab-bola" style="background:${this.corDoSabor(nome)}"></span>${esc(nome)}${vezes > 1 ? ` <span class="sab-vezes">${vezes}x</span>` : ""}</button>`;
-                        }).join("")}
-                    </div>`).join("");
+                    ${g.itens.map(nome => {
+                        const n = e.contagem[nome] || 0;
+                        const bola = `<span class="sab-bola" style="background:${this.corDoSabor(nome)}"></span><span class="sab-nome">${esc(nome)}</span>`;
+                        if (max === 1) {
+                            return `<button type="button" class="sab-linha" role="radio" aria-checked="${n ? "true" : "false"}" data-sabor="${esc(nome)}" onclick="ClienteApp.mudarSabor(this.dataset.sabor, 1)">${bola}<span class="sab-radio ${n ? "marcado" : ""}"></span></button>`;
+                        }
+                        return `<div class="sab-linha">${bola}
+                            <span class="sab-step" data-sabor="${esc(nome)}">
+                                ${n ? `<button type="button" aria-label="Tirar ${esc(nome)}" onclick="ClienteApp.mudarSabor(this.parentNode.dataset.sabor, -1)">−</button><span>${n}</span>` : ""}
+                                <button type="button" aria-label="Adicionar ${esc(nome)}" ${completo ? "disabled" : ""} onclick="ClienteApp.mudarSabor(this.parentNode.dataset.sabor, 1)">+</button>
+                            </span></div>`;
+                    }).join("")}`).join("");
+
+                document.getElementById("sab-qtd-num").textContent = e.qtd;
+                document.getElementById("sab-qtd-menos").disabled = e.qtd <= 1;
                 const btn = document.getElementById("sab-confirmar");
-                btn.disabled = faltam > 0;
-                btn.style.opacity = faltam > 0 ? "0.55" : "1";
-                btn.textContent = faltam > 0
-                    ? (faltam === 1 ? "Falta escolher 1 sabor" : `Faltam ${faltam} sabores`)
-                    : `Adicionar à sacola — ${this.formatBRL(e.produto.preco)}`;
+                btn.disabled = !completo;
+                btn.firstElementChild.textContent = completo ? "Adicionar" : (max - total === 1 ? "Falta 1 sabor" : `Faltam ${max - total} sabores`);
+                document.getElementById("sab-total").textContent = this.formatBRL(e.produto.preco * e.qtd);
             },
 
             confirmarSabores() {
                 const e = this.saboresEscolhendo;
-                if (!e || e.escolhidos.length !== e.produto.qtd_sabores) return;
-                this.colocarNaSacola(e.produto, e.escolhidos.slice());
+                if (!e || this.totalSaboresEscolhidos() !== e.produto.qtd_sabores) return;
+                // Mantém a ordem do cardápio; sabor repetido aparece duas vezes
+                const escolhidos = [];
+                this.sabores.forEach(g => g.itens.forEach(nome => { for (let i = 0; i < (e.contagem[nome] || 0); i++) escolhidos.push(nome); }));
+                const obs = document.getElementById("sab-obs").value.replace(/\s+/g, " ").trim().slice(0, 140);
+                this.colocarNaSacola(e.produto, escolhidos, e.qtd, obs);
                 this.fecharModalSabores();
             },
 
@@ -1394,6 +1445,7 @@
                         <div style="flex:1; min-width:0;">
                             <span class="cart-item-nome">${it.nome}</span>
                             ${(it.sabores || []).length ? `<span class="cart-item-sabores">${it.sabores.join(", ")}</span>` : ""}
+                            ${it.obs ? `<span class="cart-item-sabores">Obs: ${it.obs.replace(/</g, "&lt;")}</span>` : ""}
                             <span class="cart-item-valor">${this.formatBRL(it.preco * it.qtd)}${it.qtd > 1 ? ` <small>(${this.formatBRL(it.preco)} cada)</small>` : ""}</span>
                         </div>
                         <div class="qty-controller">
