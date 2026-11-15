@@ -1326,7 +1326,10 @@
                 this.mostrarResultadoTaxa("calc", "Calculando a distância até você...");
                 let data = null;
                 try {
+                    const ctl = new AbortController();
+                    setTimeout(() => ctl.abort(), 14000);
                     const resp = await fetch("/api/public/taxa-entrega", {
+                        signal: ctl.signal,
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ endereco }),
@@ -1343,7 +1346,7 @@
                     document.getElementById("cli-faixa-select").value = data.faixa_entrega;
                     this.usarFaixaManual(false);
                     const km = String(data.distancia_km).replace(".", ",");
-                    this.mostrarResultadoTaxa("ok", `<strong>${km} km da loja</strong>${data.local ? " (" + data.local.replace(/</g, "&lt;") + ")" : ""}. Taxa de entrega: <strong>${this.formatBRL(data.valor)}</strong>.<br><button type="button" onclick="ClienteApp.trocarParaManual()">O local está errado? Escolher a distância</button>`);
+                    this.mostrarResultadoTaxa("ok", `<strong>${data.aproximado ? "Cerca de " : ""}${km} km da loja</strong>${data.local ? " (" + (data.aproximado ? "pelo bairro: " : "") + data.local.replace(/</g, "&lt;") + ")" : ""}. Taxa de entrega: <strong>${this.formatBRL(data.valor)}</strong>.${data.aproximado ? " Não achamos a rua, então usamos o centro do bairro; a loja confere antes de enviar." : ""}<br><button type="button" onclick="ClienteApp.trocarParaManual()">O local está errado? Escolher a distância</button>`);
                     this.renderizarItensCheckout();
                     return true;
                 }

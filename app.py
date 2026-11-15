@@ -100,44 +100,56 @@ def _dentro_de_manaus(lat: float, lng: float) -> bool:
 
 
 def geocodificar_endereco(endereco: str):
-    """Procura o endereço no mapa (OpenStreetMap). Retorna (lat, lng, descricao) ou None."""
+    """Procura o endereço no mapa (OpenStreetMap).
+    Retorna (lat, lng, descricao, aproximado) ou None. aproximado=True quando só o bairro foi achado."""
     texto = re.sub(r"\s+", " ", endereco or "").strip()
     if len(texto) < 6:
         return None
+    limite = time.time() + 9.0  # não deixa o cliente esperando
     # Tira complementos que atrapalham a busca (apto, bloco, casa...)
     limpo = re.sub(r"\b(apto?|apartamento|bloco|bl|casa|cs|torre|sala|fundos|ap)\.?\s*\w*", " ", texto, flags=re.IGNORECASE)
     limpo = re.sub(r"\s+", " ", limpo).strip(" ,-")
     tentativas = []
     for t in (limpo, re.sub(r"\d+", " ", limpo)):
         t = re.sub(r"\s+", " ", t).strip(" ,-")
-        if t and t not in tentativas:
-            tentativas.append(t)
+        if t and all(t != x[0] for x in tentativas):
+            tentativas.append((t, False))
+    # Última tentativa: só o bairro (o trecho depois do último traço ou vírgula)
+    partes = [x.strip() for x in re.split(r"\s+-\s+|,", texto) if x.strip()]
+    if len(partes) >= 2:
+        bairro = re.sub(r"\d+", " ", partes[-1]).strip()
+        if len(bairro) >= 4 and all(bairro != x[0] for x in tentativas):
+            tentativas.append((bairro, True))
     o, sul, l, n = _MANAUS_BOX
-    for t in tentativas:
+    for t, aproximado in tentativas:
+        if time.time() > limite:
+            break
+        falhou = False
         try:
             dados = _http_json("https://nominatim.openstreetmap.org/search?" + urlencode({
                 "q": f"{t}, Manaus, Amazonas, Brasil", "format": "jsonv2", "limit": 3, "countrycodes": "br",
                 "viewbox": f"{o},{n},{l},{sul}", "bounded": 1,
-            }))
+            }), timeout=4.0)
             for d in dados or []:
                 lat, lng = float(d["lat"]), float(d["lon"])
                 if _dentro_de_manaus(lat, lng):
-                    return lat, lng, (d.get("display_name") or "").split(", Manaus")[0]
+                    return lat, lng, (d.get("display_name") or "").split(", Manaus")[0], aproximado
         except Exception:
-            pass
-        try:
-            dados = _http_json("https://photon.komoot.io/api/?" + urlencode({
-                "q": f"{t}, Manaus", "limit": 3, "lat": LOJA_LAT, "lon": LOJA_LNG, "lang": "default",
-                "bbox": f"{o},{sul},{l},{n}",
-            }))
-            for f in (dados or {}).get("features", []):
-                lng, lat = f["geometry"]["coordinates"][:2]
-                if _dentro_de_manaus(float(lat), float(lng)):
-                    pr = f.get("properties", {})
-                    desc = ", ".join(x for x in (pr.get("name") or pr.get("street"), pr.get("district") or pr.get("suburb")) if x)
-                    return float(lat), float(lng), desc
-        except Exception:
-            pass
+            falhou = True
+        if falhou and time.time() < limite:
+            try:
+                dados = _http_json("https://photon.komoot.io/api/?" + urlencode({
+                    "q": f"{t}, Manaus", "limit": 3, "lat": LOJA_LAT, "lon": LOJA_LNG,
+                    "bbox": f"{o},{sul},{l},{n}",
+                }), timeout=3.0)
+                for f in (dados or {}).get("features", []):
+                    lng, lat = f["geometry"]["coordinates"][:2]
+                    if _dentro_de_manaus(float(lat), float(lng)):
+                        pr = f.get("properties", {})
+                        desc = ", ".join(x for x in (pr.get("name") or pr.get("street"), pr.get("district") or pr.get("suburb")) if x)
+                        return float(lat), float(lng), desc, aproximado
+            except Exception:
+                pass
     return None
 
 
@@ -146,7 +158,7 @@ def distancia_rota_km(lat: float, lng: float) -> float:
     try:
         dados = _http_json(
             f"https://router.project-osrm.org/route/v1/driving/{LOJA_LNG},{LOJA_LAT};{lng},{lat}?overview=false",
-            timeout=5.0,
+            timeout=4.0,
         )
         metros = float(dados["routes"][0]["distance"])
         if metros > 0:
@@ -168,7 +180,7 @@ def handle_public_taxa_entrega(body: dict):
     achado = geocodificar_endereco(endereco)
     if not achado:
         return {"encontrado": False}
-    lat, lng, descricao = achado
+    lat, lng, descricao, aproximado = achado
     km = distancia_rota_km(lat, lng)
     fid = faixa_por_distancia(km)
     faixa = FAIXAS_ENTREGA[fid]
@@ -179,6 +191,7 @@ def handle_public_taxa_entrega(body: dict):
         "rotulo": faixa["rotulo"],
         "valor": faixa["valor"],
         "local": descricao,
+        "aproximado": aproximado,
         "cotacao": _assinatura_cotacao(endereco, fid, km),
     }
 
