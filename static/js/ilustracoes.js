@@ -20,13 +20,29 @@ const ConeIlustra = (() => {
     const BOLAS = [["#fb7fb4", "#e4579a"], ["#8a5233", "#683a22"], ["#fff1b8", "#f3d266"], ["#9be7b0", "#5fcf85"], ["#b79cf7", "#8f6ee8"]];
     const f = (n) => Math.round(n * 100) / 100;
 
-    // Uma bola de sorvete com sombra, babado na base e brilho
+    // Mistura duas cores (t = quanto da segunda)
+    function mistura(c1, c2, t) {
+        const h = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+        const [a, b] = [h(c1), h(c2)];
+        return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * t).toString(16).padStart(2, "0")).join("");
+    }
+    // Degradê que dá volume à bola (luz em cima à esquerda, sombra embaixo à direita)
+    function volume(base, sombra) {
+        const id = "cmg" + base.slice(1) + sombra.slice(1);
+        return {
+            id,
+            def: `<radialGradient id="${id}" cx="0.34" cy="0.28" r="0.85"><stop offset="0" stop-color="${mistura(base, "#ffffff", 0.55)}"/><stop offset="0.5" stop-color="${base}"/><stop offset="1" stop-color="${sombra}"/></radialGradient>`,
+        };
+    }
+
+    // Uma bola de sorvete com volume, babado na base e brilho
     function bola(x, y, r, i) {
         const [base, sombra] = BOLAS[i % BOLAS.length];
-        return `<circle cx="${f(x - r * 0.55)}" cy="${f(y + r * 0.8)}" r="${f(r * 0.3)}" fill="${sombra}"/><circle cx="${f(x)}" cy="${f(y + r * 0.9)}" r="${f(r * 0.32)}" fill="${sombra}"/><circle cx="${f(x + r * 0.55)}" cy="${f(y + r * 0.8)}" r="${f(r * 0.3)}" fill="${sombra}"/>`
-            + `<circle cx="${x}" cy="${y}" r="${r}" fill="${base}"/>`
-            + `<path d="M${f(x - r)} ${y}A${r} ${r} 0 0 0 ${f(x + r)} ${y}A${r} ${f(r * 0.5)} 0 0 1 ${f(x - r)} ${y}Z" fill="${sombra}"/>`
-            + `<ellipse cx="${f(x - r * 0.36)}" cy="${f(y - r * 0.42)}" rx="${f(r * 0.3)}" ry="${f(r * 0.16)}" fill="#ffffff" opacity="0.75" transform="rotate(-32 ${f(x - r * 0.36)} ${f(y - r * 0.42)})"/>`;
+        const v = volume(base, sombra);
+        return `<defs>${v.def}</defs><circle cx="${f(x - r * 0.55)}" cy="${f(y + r * 0.8)}" r="${f(r * 0.3)}" fill="${sombra}"/><circle cx="${f(x)}" cy="${f(y + r * 0.9)}" r="${f(r * 0.32)}" fill="${sombra}"/><circle cx="${f(x + r * 0.55)}" cy="${f(y + r * 0.8)}" r="${f(r * 0.3)}" fill="${sombra}"/>`
+            + `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#${v.id})"/>`
+            + `<path d="M${f(x - r * 0.7)} ${f(y - r * 0.1)}c${f(r * 0.4)} ${f(-r * 0.45)} ${f(r * 0.9)} ${f(-r * 0.6)} ${f(r * 1.3)} ${f(-r * 0.35)}" stroke="${sombra}" stroke-width="${f(r * 0.1)}" fill="none" stroke-linecap="round" opacity="0.35"/>`
+            + `<ellipse cx="${f(x - r * 0.36)}" cy="${f(y - r * 0.45)}" rx="${f(r * 0.3)}" ry="${f(r * 0.15)}" fill="#ffffff" opacity="0.7" transform="rotate(-32 ${f(x - r * 0.36)} ${f(y - r * 0.45)})"/>`;
     }
     const bolas = (posicoes) => posicoes.map(([x, y, r], i) => bola(x, y, r, i)).join("");
     const cereja = (x, y) => `<path d="M${x} ${y}c0-3 1.5-5 4-6" stroke="#15803d" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="${x}" cy="${y}" r="2.6" fill="#e11d48"/><circle cx="${f(x - 0.9)}" cy="${f(y - 0.9)}" r="0.8" fill="#ffffff" opacity="0.7"/>`;
@@ -156,6 +172,82 @@ const ConeIlustra = (() => {
         return `<span class="ilu-produto" aria-hidden="true" style="width:${t}px;height:${t}px;border-radius:${Math.round(t * 0.3)}px;background:radial-gradient(circle at 28% 22%, #ffffff 0%, ${desenho.fundo} 62%);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.06);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;"><svg width="${Math.round(t * 0.9)}" height="${Math.round(t * 0.9)}" viewBox="0 0 48 48">${desenho.svg}</svg></span>`;
     }
 
+    // ---- Bola realista para cada sabor do cardápio ----
+    // [trecho do nome, cor base, cor de sombra, detalhes...]  detalhe = [tipo, cor(es)]
+    const SABORES_VISUAL = [
+        ["chocolate belga", "#7a4526", "#3f1f0e", ["lascas", "#3a1c0c"]],
+        ["chocolate trufado", "#5c3018", "#2b1206", ["calda", "#2b1206"], ["po", "#a9683f"]],
+        ["pistache", "#7a4526", "#3f1f0e", ["calda", "#a8d36c"], ["lascas", "#c4e58f"]],
+        ["chocomenta", "#aeeccb", "#5cc592", ["lascas", "#4a2613"]],
+        ["sonho de valsa", "#ecd3ae", "#c79d68", ["calda", "#6b3a1e"], ["pedacos", ["#e11d74", "#6b3a1e"]]],
+        ["serenata", "#ecd3ae", "#c79d68", ["calda", "#4a2613"], ["lascas", "#4a2613"]],
+        ["nutella", "#fff6dc", "#ead9a4", ["calda", "#6b3a1e"]],
+        ["leite trufado", "#fbeed0", "#e2cb92", ["lascas", "#4a2613"], ["po", "#7a4526"]],
+        ["leite condensado", "#fff3cf", "#ecd58f", ["pedacos", ["#ef4444", "#22c55e", "#f59e0b"]]],
+        ["doce de leite", "#dba566", "#a8703a", ["calda", "#9a5f2c"]],
+        ["caramelo", "#e8b872", "#b8802f", ["calda", "#8a5a1f"], ["po", "#ffffff"]],
+        ["cookies", "#f6f2e9", "#d9d0bd", ["lascas", "#2d2622"], ["pedacos", ["#2d2622", "#4b403a"]]],
+        ["flocos", "#fffaf0", "#e6dcc3", ["lascas", "#4a2613"]],
+        ["galaxy", "#6f6cf2", "#3b2fb0", ["calda", "#f472b6"], ["estrelas", "#ffffff"]],
+        ["morango mesclado", "#ffb9d2", "#f277a6", ["calda", "#e11d48"]],
+        ["grego com morango", "#fffdf5", "#e7e0cc", ["calda", "#e11d48"], ["pedacos", ["#e11d48"]]],
+        ["amarena", "#fffdf5", "#e7e0cc", ["calda", "#7f1d3a"], ["pedacos", ["#5c0f27"]]],
+        ["maracuja", "#ffd84f", "#e6a800", ["sementes", "#1f1408"]],
+        ["abacaxi", "#ffe891", "#e9c33f", ["calda", "#8e2157"]],
+        ["passas", "#f5e6c0", "#d8bf82", ["pedacos", ["#4a2030", "#5b2b1a"]]],
+        ["acai", "#5b2a86", "#2f1150", ["calda", "#fff6dc"]],
+        ["tucuma", "#f7a520", "#c96f06", ["po", "#fbd38d"]],
+        ["tapioca", "#fffaf0", "#e6dcc3", ["perolas", "#ffffff"]],
+        ["milho", "#ffe272", "#e3b420", ["pedacos", ["#f2b90f", "#fff3b0"]]],
+        ["chiclete", "#74cdfb", "#2f9bd8", ["calda", "#f472b6"], ["pedacos", ["#ffffff", "#fde047"]]],
+        ["alasca", "#fff3cf", "#ecd58f", ["pedacos", ["#dc2626", "#16a34a", "#5b2b1a"]]],
+    ];
+    const PONTOS = [[15, 17, 25], [27, 12, -20], [34, 22, 40], [20, 26, -35], [31, 29, 15], [12, 26, 60], [23, 19, 10], [28, 21, 75], [17, 31, -10]];
+    const FORMA_BOLA = "M7 26C7 14 14.500 6 24 6s17 8 17 20c0 2-1 3.500-2.500 4 1 2.500-1.500 4.500-4 3.500-1 2.500-4.500 3-6 1-1.500 2.500-6 2.500-7.500 0-2 2-6 1.500-7-1-2.500 1-5.500-1-4.500-3.500C8 29.500 7 28 7 26z";
+
+    function sabor(nome, tamanho) {
+        const t = tamanho || 40;
+        const n = norm(nome);
+        const cfg = SABORES_VISUAL.find((x) => n.includes(x[0])) || ["", "#fff1b8", "#e6c65a"];
+        const [, base, sombra, ...detalhes] = cfg;
+        const v = volume(base, sombra);
+        const partes = detalhes.map(([tipo, cor]) => {
+            if (tipo === "calda") {
+                return `<path d="M5 21c6-8 12 4 19-2s10-7 19 0M7 30c6-5 10 3 16-1s10-5 18 1" stroke="${cor}" stroke-width="3.400" fill="none" stroke-linecap="round" opacity="0.92"/><path d="M5 21c6-8 12 4 19-2s10-7 19 0" stroke="#ffffff" stroke-width="0.800" fill="none" opacity="0.25" transform="translate(0 -1.200)"/>`;
+            }
+            if (tipo === "lascas") {
+                return PONTOS.slice(0, 7).map(([x, y, a]) => `<path d="M0 0l3.600 0.700-0.900 2.700-3-0.900z" fill="${cor}" transform="translate(${x} ${y}) rotate(${a})"/>`).join("");
+            }
+            if (tipo === "pedacos") {
+                return PONTOS.slice(2).map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1.500 : 1.900}" fill="${cor[i % cor.length]}"/><circle cx="${f(x - 0.500)}" cy="${f(y - 0.500)}" r="0.500" fill="#ffffff" opacity="0.5"/>`).join("");
+            }
+            if (tipo === "sementes") {
+                return PONTOS.map(([x, y, a]) => `<ellipse cx="${x}" cy="${y}" rx="1.500" ry="0.900" fill="${cor}" transform="rotate(${a} ${x} ${y})"/>`).join("");
+            }
+            if (tipo === "perolas") {
+                return PONTOS.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.700" fill="${cor}" stroke="#cfc5ad" stroke-width="0.700"/>`).join("");
+            }
+            if (tipo === "po") {
+                return PONTOS.map(([x, y]) => `<circle cx="${f(x + 2)}" cy="${f(y - 2)}" r="0.800" fill="${cor}" opacity="0.85"/><circle cx="${f(x - 2)}" cy="${f(y + 2)}" r="0.600" fill="${cor}" opacity="0.7"/>`).join("");
+            }
+            if (tipo === "estrelas") {
+                return PONTOS.slice(0, 6).map(([x, y], i) => i % 2
+                    ? `<circle cx="${x}" cy="${y}" r="0.900" fill="${cor}"/>`
+                    : `<path d="M${x} ${y - 2.200}l0.700 1.500 1.500 0.700-1.500 0.700-0.700 1.500-0.700-1.500-1.500-0.700 1.500-0.700z" fill="${cor}"/>`).join("");
+            }
+            return "";
+        }).join("");
+        return `<svg class="ilu-sabor" aria-hidden="true" width="${t}" height="${t}" viewBox="0 0 48 44" style="flex-shrink:0;"><defs>${v.def}<clipPath id="cmsabclip"><path d="${FORMA_BOLA}"/></clipPath></defs>`
+            + `<ellipse cx="24" cy="39.500" rx="15" ry="3" fill="#0f172a" opacity="0.13"/>`
+            + `<path d="${FORMA_BOLA}" fill="url(#${v.id})"/>`
+            + `<g clip-path="url(#cmsabclip)">`
+            + `<path d="M6 28c8-3.500 26-3.500 36 0v12H6z" fill="${sombra}" opacity="0.28"/>`
+            + `<path d="M11 19c4-6 11-9 19-7.500M10 25c7-3 18-4 28-1.500" stroke="${sombra}" stroke-width="1.100" fill="none" stroke-linecap="round" opacity="0.3"/>`
+            + partes
+            + `<ellipse cx="16" cy="13.500" rx="5.500" ry="2.500" fill="#ffffff" opacity="0.5" transform="rotate(-36 16 13.500)"/><circle cx="23.500" cy="9.500" r="1.100" fill="#ffffff" opacity="0.55"/>`
+            + `</g></svg>`;
+    }
+
     // Ícones pequenos e coloridos usados no lugar dos emojis
     const ICONES = {
         moto: `<rect x="2" y="7.500" width="7.500" height="6.500" rx="1.500" fill="#f472b6"/><path d="M4 10.700h3.500" stroke="#ffffff" stroke-width="1.200" stroke-linecap="round"/><path d="M6 17.500h7.500l3-7.500h2.500M15.500 5.500h3l1.700 6" stroke="#0369a1" stroke-width="2.200" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="17.500" r="3" fill="#ffffff" stroke="#0f172a" stroke-width="1.700"/><circle cx="19" cy="17.500" r="3" fill="#ffffff" stroke="#0f172a" stroke-width="1.700"/>`,
@@ -189,6 +281,8 @@ const ConeIlustra = (() => {
 
     return {
         CATEGORIAS,
+        /** Bola de sorvete realista do sabor (HTML). */
+        sabor,
         /** Ícone pequeno colorido (HTML). */
         icone,
         /** Troca cada <span data-icone="nome"> da página pelo ícone desenhado. */
