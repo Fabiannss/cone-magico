@@ -167,6 +167,36 @@ const ConeIlustra = (() => {
         return desenhos.taca(numero(/(\d+)\s*(sabor|bola)/, 1));
     }
 
+    // ---- Fotos ilustrativas (geradas por IA) ----
+    const FOTOS = "/static/img/fotos/";
+    const FOTO_SABOR = {
+        "chocolate belga": "s-chocolate-belga", "chocolate trufado": "s-chocolate-trufado", "pistache": "s-pistache",
+        "chocomenta": "s-chocomenta", "sonho de valsa": "s-sonho-de-valsa", "serenata": "s-serenata",
+        "nutella": "s-nutella", "leite trufado": "s-leite-trufado", "leite condensado": "s-leite-condensado",
+        "doce de leite": "s-doce-de-leite", "caramelo": "s-caramelo", "cookies": "s-cookies", "flocos": "s-flocos",
+        "galaxy": "s-galaxy", "morango mesclado": "s-morango-mesclado", "grego com morango": "s-grego-com-morango",
+        "amarena": "s-amarena",
+    };
+    function fotoProduto(produto) {
+        const nome = norm(produto && produto.nome);
+        const cat = (produto && produto.categoria) || "";
+        if (nome.includes("acai") || nome.includes("cupuacu") || cat === "Açaí e Cupuaçu") return "p-acai";
+        if (nome.includes("agua")) return "p-agua";
+        if (nome.includes("milk") || cat === "Milkshake") return "p-milkshake";
+        if (nome.includes("picole") || cat === "Picolé") {
+            if (/(tablito|brigadeiro|chicabon|chocolate)/.test(nome)) return "p-picole-chocolate";
+            if (/(limao|uva|morango|frutilly|fruttare)/.test(nome)) return "p-picole-fruta";
+            return "p-picole-creme";
+        }
+        if (nome.includes("cascalho") || nome.includes("casquinha") || nome.includes("cascao") || cat === "Casquinha / Cascão") return "p-cone";
+        if (cat === "Copo / Sundae" || nome.includes("taca") || nome.includes("copo")) return "p-taca";
+        return null;
+    }
+    function molduraFoto(arquivo, tamanho) {
+        const t = tamanho || 44;
+        return `<span class="ilu-produto" aria-hidden="true" style="width:${t}px;height:${t}px;border-radius:${Math.round(t * 0.3)}px;background:#cfe6f5;box-shadow:inset 0 0 0 1px rgba(15,23,42,0.06);display:inline-flex;flex-shrink:0;overflow:hidden;"><img src="${FOTOS}${arquivo}.jpg" alt="" width="${t}" height="${t}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></span>`;
+    }
+
     function moldura(desenho, tamanho) {
         const t = tamanho || 44;
         return `<span class="ilu-produto" aria-hidden="true" style="width:${t}px;height:${t}px;border-radius:${Math.round(t * 0.3)}px;background:radial-gradient(circle at 28% 22%, #ffffff 0%, ${desenho.fundo} 62%);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.06);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;"><svg width="${Math.round(t * 0.9)}" height="${Math.round(t * 0.9)}" viewBox="0 0 48 48">${desenho.svg}</svg></span>`;
@@ -208,6 +238,10 @@ const ConeIlustra = (() => {
     function sabor(nome, tamanho) {
         const t = tamanho || 40;
         const n = norm(nome);
+        const chaveFoto = Object.keys(FOTO_SABOR).find((k) => n.includes(k));
+        if (chaveFoto) {
+            return `<img class="ilu-sabor" aria-hidden="true" alt="" src="${FOTOS}${FOTO_SABOR[chaveFoto]}.jpg" width="${t}" height="${t}" loading="lazy" style="width:${t}px;height:${t}px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#cfe6f5;">`;
+        }
         const cfg = SABORES_VISUAL.find((x) => n.includes(x[0])) || ["", "#fff1b8", "#e6c65a"];
         const [, base, sombra, ...detalhes] = cfg;
         const v = volume(base, sombra);
@@ -293,6 +327,8 @@ const ConeIlustra = (() => {
         },
         /** Desenho colorido do produto (HTML). */
         produto(produto, tamanho) {
+            const foto = fotoProduto(produto);
+            if (foto) return molduraFoto(foto, tamanho);
             return moldura(escolher(produto), tamanho);
         },
         /** Desenho que representa a categoria (HTML). */

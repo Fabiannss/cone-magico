@@ -860,6 +860,7 @@
                     Condomínio Ipanema – Rua Comercial, 362 (em frente ao Bloco A), Parque Dez de Novembro, Manaus - AM
                     <span class="ver-mapa">Ver no mapa</span>
                 </a>
+        <p style="text-align:center; font-size:0.78rem; color:#64748b; margin:0.6rem 0 0;">Imagens ilustrativas. O produto servido pode variar.</p>
         <p class="rodape-loja"><a href="/">Acesso da loja</a></p>
     </main>
 
@@ -1024,7 +1025,7 @@
         </div>
     </div>
 
-    <script src="/static/js/ilustracoes.js?v=3"></script>
+    <script src="/static/js/ilustracoes.js?v=4"></script>
     <script>ConeIlustra.aplicarIcones();</script>
     <script>
         const ClienteApp = {
@@ -1150,7 +1151,7 @@
                                 const q = qtdNaSacola(p.id);
                                 return `
                                 <div class="menu-item">
-                                    ${ConeIlustra.produto(p, 58)}
+                                    ${ConeIlustra.produto(p, 72)}
                                     <div class="menu-item-texto">
                                         <span class="menu-item-nome">${nomeCurto(p.nome)}</span>
                                         ${p.qtd_sabores ? `<span class="menu-item-detalhe">Você escolhe ${p.qtd_sabores === 1 ? "o sabor" : "os " + p.qtd_sabores + " sabores"}</span>` : (detalheUtil(p) ? `<span class="menu-item-detalhe">${detalheUtil(p)}</span>` : "")}
@@ -1267,7 +1268,7 @@
                     <h4 class="sab-grupo-titulo">${esc(g.grupo)}</h4>
                     ${g.itens.map(nome => {
                         const n = e.contagem[nome] || 0;
-                        const bola = `${ConeIlustra.sabor(nome, 46)}<span class="sab-nome">${esc(nome)}</span>`;
+                        const bola = `${ConeIlustra.sabor(nome, 52)}<span class="sab-nome">${esc(nome)}</span>`;
                         if (max === 1) {
                             return `<button type="button" class="sab-linha" role="radio" aria-checked="${n ? "true" : "false"}" data-sabor="${esc(nome)}" onclick="ClienteApp.mudarSabor(this.dataset.sabor, 1)">${bola}<span class="sab-radio ${n ? "marcado" : ""}"></span></button>`;
                         }
