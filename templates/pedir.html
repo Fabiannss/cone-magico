@@ -656,12 +656,32 @@
             cursor: pointer;
             box-shadow: 0 6px 18px rgba(3, 105, 161, 0.35);
             transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        /* O botão de enviar fica FORA da área que rola, então nunca tampa o PIX,
+           o aviso de taxa ou o resumo — em qualquer tamanho de tela. */
+        #modal-checkout .modal-card {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #form-finalizar-pedido {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        #form-finalizar-pedido .modal-scroll {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            padding-bottom: 0.2rem;
         }
 
         #form-finalizar-pedido .btn-submit-order {
-            position: sticky;
-            bottom: 0.6rem;
-            z-index: 5;
             margin-top: 0.75rem;
             box-shadow: 0 -10px 18px 6px #ffffff, 0 8px 22px rgba(3, 105, 161, 0.35);
         }
@@ -879,9 +899,10 @@
                 <button type="button" class="btn-modal-close" onclick="ClienteApp.fecharModalCheckout()">✕</button>
             </div>
 
-            <div id="lista-itens-checkout" style="margin-bottom:1rem;"></div>
-
             <form id="form-finalizar-pedido" onsubmit="event.preventDefault(); ClienteApp.enviarPedidoOnline();">
+              <div class="modal-scroll">
+                <div id="lista-itens-checkout" style="margin-bottom:1rem;"></div>
+
                 <label style="font-size:0.82rem; font-weight:800; color:#334155; margin-bottom:0.4rem; display:block;">Como deseja receber seu pedido?</label>
                 <div class="toggle-switch-grid">
                     <button type="button" class="toggle-tab-btn active" id="btn-toggle-delivery" onclick="ClienteApp.definirModalidade('99Entrega / Motoboy')">
@@ -971,6 +992,7 @@
                     </div>
                 </div>
 
+              </div>
                 <button type="submit" id="btn-enviar-final" class="btn-submit-order">
                     Enviar pedido para o Caixa da Sorveteria
                 </button>
