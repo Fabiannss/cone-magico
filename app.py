@@ -12,7 +12,15 @@ import urllib.request
 from urllib.parse import parse_qs, urlencode
 from wsgiref.simple_server import make_server
 
-from database import ensure_default_users, get_connection, hash_password, init_db, is_turso_enabled
+from database import (
+    ensure_default_users,
+    get_connection,
+    hash_password,
+    init_db,
+    is_turso_enabled,
+    precisa_atualizar_hash,
+    verificar_senha,
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -238,6 +246,8 @@ def handle_public_taxa_entrega(body: dict):
 
 SESSAO_HORAS = 12
 FUSO_LOJA_HORAS = -4  # Manaus (UTC-4, sem horário de verão)
+MAX_TENTATIVAS_LOGIN = 6
+BLOQUEIO_LOGIN_MINUTOS = 10
 
 
 def agora_local():
@@ -369,21 +379,81 @@ def handle_login(body: dict):
     }
     login_key = alias_map.get(email_raw, email_raw)
 
-    user = conn.execute(
+    row = conn.execute(
         """
-        SELECT id, nome, email, perfil, cargo, turno, telefone, salario_base
+        SELECT id, nome, email, perfil, cargo, turno, telefone, salario_base,
+               senha_hash, tentativas_login, bloqueado_ate
         FROM usuarios
         WHERE (lower(email) = ? OR lower(email) = ?)
-          AND senha_hash = ?
           AND ativo = 1
         """,
-        (email_raw, login_key, hash_password(senha)),
+        (email_raw, login_key),
     ).fetchone()
 
-    conn.close()
-    if not user:
+    if not row:
+        conn.close()
+        # Mesma mensagem genérica de um usuário inexistente, para não revelar quais e-mails existem.
         raise APIError("Usuário ou senha incorretos. Verifique suas credenciais.", 401)
-    usuario = row_to_dict(user)
+
+    registro = row_to_dict(row)
+    agora = agora_local()
+
+    bloqueado_ate_str = registro.get("bloqueado_ate")
+    if bloqueado_ate_str:
+        try:
+            bloqueado_ate = datetime.fromisoformat(bloqueado_ate_str)
+        except ValueError:
+            bloqueado_ate = None
+        if bloqueado_ate and agora < bloqueado_ate:
+            conn.close()
+            minutos_restantes = max(1, int((bloqueado_ate - agora).total_seconds() // 60) + 1)
+            raise APIError(
+                f"Muitas tentativas de login. Tente novamente em {minutos_restantes} minuto(s).",
+                429,
+            )
+
+    senha_ok = verificar_senha(senha, registro["senha_hash"] or "")
+
+    if not senha_ok:
+        tentativas = int(registro.get("tentativas_login") or 0) + 1
+        if tentativas >= MAX_TENTATIVAS_LOGIN:
+            novo_bloqueio = (agora + timedelta(minutes=BLOQUEIO_LOGIN_MINUTOS)).isoformat()
+            conn.execute(
+                "UPDATE usuarios SET tentativas_login = ?, bloqueado_ate = ? WHERE id = ?",
+                (tentativas, novo_bloqueio, registro["id"]),
+            )
+            conn.commit()
+            conn.close()
+            raise APIError(
+                f"Muitas tentativas de login. Tente novamente em {BLOQUEIO_LOGIN_MINUTOS} minuto(s).",
+                429,
+            )
+        conn.execute(
+            "UPDATE usuarios SET tentativas_login = ? WHERE id = ?",
+            (tentativas, registro["id"]),
+        )
+        conn.commit()
+        conn.close()
+        raise APIError("Usuário ou senha incorretos. Verifique suas credenciais.", 401)
+
+    # Login OK: zera o contador/bloqueio e, se necessário, migra o hash para o formato novo.
+    if int(registro.get("tentativas_login") or 0) or registro.get("bloqueado_ate"):
+        conn.execute(
+            "UPDATE usuarios SET tentativas_login = 0, bloqueado_ate = NULL WHERE id = ?",
+            (registro["id"],),
+        )
+    if precisa_atualizar_hash(registro["senha_hash"] or ""):
+        conn.execute(
+            "UPDATE usuarios SET senha_hash = ? WHERE id = ?",
+            (hash_password(senha), registro["id"]),
+        )
+    conn.commit()
+    conn.close()
+
+    usuario = {
+        k: registro.get(k)
+        for k in ("id", "nome", "email", "perfil", "cargo", "turno", "telefone", "salario_base")
+    }
     return {"usuario": usuario, "token": criar_token_sessao(usuario["id"])}
 
 

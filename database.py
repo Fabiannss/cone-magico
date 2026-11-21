@@ -1,7 +1,9 @@
 import sqlite3
 import hashlib
+import hmac
 import json
 import os
+import secrets
 import shutil
 import urllib.request
 import urllib.error
@@ -208,8 +210,37 @@ def get_connection():
     return conn
 
 
+_PBKDF2_ITERACOES = 200_000
+
+
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+    """Gera um hash salgado (PBKDF2-SHA256) para guardar a senha. Formato: pbkdf2$iteracoes$sal$hash."""
+    sal = secrets.token_hex(16)
+    derivado = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), sal.encode("utf-8"), _PBKDF2_ITERACOES).hex()
+    return f"pbkdf2${_PBKDF2_ITERACOES}${sal}${derivado}"
+
+
+def verificar_senha(password: str, hash_guardado: str) -> bool:
+    """Confere a senha digitada contra o hash guardado.
+    Aceita tanto o formato novo (salgado) quanto o formato antigo (SHA-256 simples, sem sal),
+    para não travar o login de contas criadas antes desta mudança."""
+    if not hash_guardado:
+        return False
+    if hash_guardado.startswith("pbkdf2$"):
+        try:
+            _, iteracoes_txt, sal, esperado = hash_guardado.split("$", 3)
+            iteracoes = int(iteracoes_txt)
+        except (ValueError, TypeError):
+            return False
+        derivado = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), sal.encode("utf-8"), iteracoes).hex()
+        return hmac.compare_digest(derivado, esperado)
+    # Formato antigo (sem sal) — só para compatibilidade com contas já existentes
+    return hmac.compare_digest(hashlib.sha256(password.encode("utf-8")).hexdigest(), hash_guardado)
+
+
+def precisa_atualizar_hash(hash_guardado: str) -> bool:
+    """True quando a senha ainda está no formato antigo (sem sal) e deve ser migrada no próximo login certo."""
+    return bool(hash_guardado) and not hash_guardado.startswith("pbkdf2$")
 
 
 def init_db():
@@ -343,6 +374,17 @@ def init_db():
     for col_name, col_def in novas_colunas_vendas:
         try:
             cursor.execute(f"ALTER TABLE vendas ADD COLUMN {col_name} {col_def}")
+        except Exception:
+            pass
+
+    # Migração automática: controle de tentativas de login (proteção contra força bruta)
+    novas_colunas_usuarios = [
+        ("tentativas_login", "INTEGER DEFAULT 0"),
+        ("bloqueado_ate", "TEXT"),
+    ]
+    for col_name, col_def in novas_colunas_usuarios:
+        try:
+            cursor.execute(f"ALTER TABLE usuarios ADD COLUMN {col_name} {col_def}")
         except Exception:
             pass
 
