@@ -153,6 +153,29 @@ def geocodificar_endereco(endereco: str):
     return None
 
 
+def reverse_geocodificar(lat: float, lng: float):
+    """Tenta transformar coordenadas (GPS do cliente) num endereço legível para o entregador."""
+    try:
+        dados = _http_json("https://nominatim.openstreetmap.org/reverse?" + urlencode({
+            "lat": f"{lat:.6f}", "lon": f"{lng:.6f}", "format": "jsonv2", "zoom": 18, "addressdetails": 1,
+        }), timeout=4.0)
+        endereco = dados.get("address") or {}
+        rua = endereco.get("road") or endereco.get("pedestrian") or endereco.get("suburb")
+        numero = endereco.get("house_number")
+        bairro = endereco.get("suburb") or endereco.get("neighbourhood") or endereco.get("quarter")
+        partes = []
+        if rua:
+            partes.append(f"{rua}, {numero}" if numero else rua)
+        if bairro and bairro != rua:
+            partes.append(bairro)
+        if partes:
+            return ", ".join(partes)
+        nome = (dados.get("display_name") or "").split(", Manaus")[0].split(", Amazonas")[0]
+        return nome or None
+    except Exception:
+        return None
+
+
 def distancia_rota_km(lat: float, lng: float) -> float:
     """Distância pelas ruas, da loja até o cliente. Se o serviço de rotas falhar, estima pela linha reta."""
     try:
@@ -174,13 +197,29 @@ def _assinatura_cotacao(endereco: str, faixa_id: str, km: float) -> str:
 
 
 def handle_public_taxa_entrega(body: dict):
-    endereco = (body.get("endereco") or "").strip()
-    if len(endereco) < 6:
-        raise APIError("Digite o endereço com rua, número e bairro.")
-    achado = geocodificar_endereco(endereco)
-    if not achado:
-        return {"encontrado": False}
-    lat, lng, descricao, aproximado = achado
+    lat_bruto, lng_bruto = body.get("lat"), body.get("lng")
+    via_gps = lat_bruto not in (None, "") and lng_bruto not in (None, "")
+
+    if via_gps:
+        try:
+            lat, lng = float(lat_bruto), float(lng_bruto)
+        except (TypeError, ValueError):
+            raise APIError("Localização inválida.")
+        if not _dentro_de_manaus(lat, lng):
+            return {"encontrado": False, "fora_de_manaus": True}
+        descricao = reverse_geocodificar(lat, lng)
+        aproximado = False
+        endereco_para_assinatura = descricao or f"gps:{lat:.5f},{lng:.5f}"
+    else:
+        endereco = (body.get("endereco") or "").strip()
+        if len(endereco) < 6:
+            raise APIError("Digite o endereço com rua, número e bairro.")
+        achado = geocodificar_endereco(endereco)
+        if not achado:
+            return {"encontrado": False}
+        lat, lng, descricao, aproximado = achado
+        endereco_para_assinatura = endereco
+
     km = distancia_rota_km(lat, lng)
     fid = faixa_por_distancia(km)
     faixa = FAIXAS_ENTREGA[fid]
@@ -192,7 +231,8 @@ def handle_public_taxa_entrega(body: dict):
         "valor": faixa["valor"],
         "local": descricao,
         "aproximado": aproximado,
-        "cotacao": _assinatura_cotacao(endereco, fid, km),
+        "via_gps": via_gps,
+        "cotacao": _assinatura_cotacao(endereco_para_assinatura, fid, km),
     }
 
 
