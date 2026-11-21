@@ -607,6 +607,9 @@
         .sab-add { flex: 1; min-height: 48px; border: 0; border-radius: 12px; background: #0369a1; color: #ffffff; font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; gap: 0.5rem; }
         .sab-add:disabled { background: #cbd5e1; color: #475569; cursor: not-allowed; }
         .cart-item-sabores { display: block; font-size: 0.78rem; color: #475569; line-height: 1.35; margin: 0.1rem 0; }
+        .btn-localizacao { display: inline-flex; align-items: center; gap: 0.4rem; background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1; font-family: inherit; font-weight: 700; font-size: 0.82rem; border-radius: 10px; padding: 0.4rem 0.7rem; margin: 0.3rem 0 0.5rem; cursor: pointer; }
+        .btn-localizacao:active { background: #e0f2fe; }
+        .btn-localizacao:disabled { opacity: 0.6; cursor: wait; }
         .taxa-resultado { margin-top: 0.5rem; border-radius: 12px; padding: 0.65rem 0.8rem; font-size: 0.86rem; line-height: 1.45; }
         .taxa-resultado.ok { background: #f0f9ff; border: 1px solid #bae6fd; color: #0c4a6e; }
         .taxa-resultado.falha { background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; }
@@ -931,9 +934,12 @@
 
                 <div class="form-row" id="row-endereco-entrega">
                     <label for="cli-endereco-input">Endereço de entrega (rua, número e bairro) *</label>
+                    <button type="button" id="btn-usar-localizacao" class="btn-localizacao" onclick="ClienteApp.usarLocalizacaoAtual()">
+                        <span data-icone="mapa" data-tamanho="16"></span> Usar minha localização atual
+                    </button>
                     <input type="text" id="cli-endereco-input" class="input-text" autocomplete="street-address" placeholder="Ex: Rua Rio Içá, 120 - Nossa Senhora das Graças"
                         oninput="ClienteApp.enderecoDigitado()" onchange="ClienteApp.calcularTaxaPeloEndereco()">
-                    <div class="taxa-resultado calc" id="taxa-resultado">Digite o endereço e a taxa de entrega aparece aqui.</div>
+                    <div class="taxa-resultado calc" id="taxa-resultado">Digite o endereço, ou use sua localização atual, e a taxa de entrega aparece aqui.</div>
                 </div>
 
                 <div class="form-row" id="row-faixa-entrega" style="display:none;">
@@ -1396,6 +1402,77 @@
                     this.renderizarItensCheckout();
                 }
                 if (v.length >= 10) this.timerEndereco = setTimeout(() => this.calcularTaxaPeloEndereco(), 1300);
+            },
+
+            usarLocalizacaoAtual() {
+                if (this.modalidadeEntrega === "Retirada no Balcão") return;
+                if (!("geolocation" in navigator)) {
+                    this.mostrarResultadoTaxa("falha", "Seu navegador não permite localização automática aqui. Digite o endereço acima.");
+                    return;
+                }
+                clearTimeout(this.timerEndereco);
+                const btn = document.getElementById("btn-usar-localizacao");
+                btn.disabled = true;
+                this.mostrarResultadoTaxa("calc", "📍 Obtendo sua localização...");
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => { btn.disabled = false; this.calcularTaxaPorGPS(pos.coords.latitude, pos.coords.longitude); },
+                    (err) => {
+                        btn.disabled = false;
+                        let msg = "Não conseguimos obter sua localização. Digite o endereço acima.";
+                        if (err.code === err.PERMISSION_DENIED) msg = "Permissão de localização negada. Digite o endereço acima.";
+                        else if (err.code === err.TIMEOUT) msg = "A localização demorou demais para responder. Digite o endereço acima.";
+                        this.mostrarResultadoTaxa("falha", msg);
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                );
+            },
+
+            async calcularTaxaPorGPS(lat, lng) {
+                this.mostrarResultadoTaxa("calc", "Calculando a distância até você...");
+                let data = null;
+                try {
+                    const ctl = new AbortController();
+                    setTimeout(() => ctl.abort(), 14000);
+                    const resp = await fetch("/api/public/taxa-entrega", {
+                        signal: ctl.signal,
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ lat, lng }),
+                    });
+                    data = await resp.json();
+                    if (!resp.ok) data = null;
+                } catch (e) { data = null; }
+
+                if (data && data.fora_de_manaus) {
+                    this.cotacao = null;
+                    this.faixaEscolhida = "";
+                    document.getElementById("cli-faixa-select").value = "";
+                    this.usarFaixaManual(true);
+                    this.mostrarResultadoTaxa("falha", "Sua localização atual parece estar fora de Manaus. Digite o endereço de entrega manualmente.");
+                    this.renderizarItensCheckout();
+                    return false;
+                }
+
+                if (data && data.encontrado) {
+                    if (data.local) {
+                        document.getElementById("cli-endereco-input").value = data.local;
+                        this.enderecoCalculado = data.local;
+                    }
+                    this.cotacao = data;
+                    this.faixaEscolhida = data.faixa_entrega;
+                    document.getElementById("cli-faixa-select").value = data.faixa_entrega;
+                    this.usarFaixaManual(false);
+                    const km = String(data.distancia_km).replace(".", ",");
+                    const avisoEndereco = data.local
+                        ? " Preenchemos o endereço acima pela sua localização — confira se está certo antes de enviar."
+                        : " Não conseguimos transformar sua localização em um endereço; digite-o acima para o entregador.";
+                    this.mostrarResultadoTaxa("ok", `<strong>📍 ${km} km da loja</strong> (pela sua localização atual). Taxa de entrega: <strong>${this.formatBRL(data.valor)}</strong>.${avisoEndereco}<br><button type="button" onclick="ClienteApp.trocarParaManual()">Prefiro digitar o endereço</button>`);
+                    this.renderizarItensCheckout();
+                    return true;
+                }
+
+                this.mostrarResultadoTaxa("falha", "Não conseguimos calcular pela sua localização agora. Digite o endereço acima.");
+                return false;
             },
 
             async calcularTaxaPeloEndereco() {
