@@ -69,6 +69,11 @@ def sabores_necessarios(nome: str, categoria: str) -> int:
     m = re.search(r"(\d+)\s+sabor", nome or "", re.IGNORECASE)
     if m:
         return max(0, min(int(m.group(1)), 8))
+    # Produtos de casquinha/cascão/copo costumam indicar a quantidade no nome
+    # como "N Bola(s)" em vez de "N sabor(es)" — reconhece esse padrão também.
+    m = re.search(r"(\d+)\s*bolas?", nome or "", re.IGNORECASE)
+    if m:
+        return max(0, min(int(m.group(1)), 8))
     if (categoria or "") == "Milkshake":
         return 1
     return 0

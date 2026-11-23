@@ -416,6 +416,7 @@ def init_db():
     seed_initial_data(conn)
     ensure_default_users(conn)
     migrar_categorias_novas(conn)
+    migrar_casquinhas_cascoes(conn)
     conn.close()
     _DB_INITIALIZED = True
 
@@ -442,6 +443,38 @@ def migrar_categorias_novas(conn):
         conn.commit()
     except Exception as exc:  # nunca impedir o sistema de subir por causa disso
         print(f"Aviso: migração de categorias não aplicada: {exc}")
+
+
+def migrar_casquinhas_cascoes(conn):
+    """Simplifica o cardápio de casquinha/cascão para o padrão novo, uma única vez:
+    "Casquinha" = 1 bola (R$ 8,00), "Cascão" = 2 bolas (R$ 15,00). Remove a
+    "Casquinha Dupla" (redundante com o novo Cascão) e a "Cestinha Especial
+    (3 Bolas)" do cardápio público, sem apagar o histórico de vendas que
+    referencia esses produtos.
+
+    Só roda enquanto o nome antigo "Casquinha Simples (1 Bola)" ainda existir, para
+    não desfazer uma edição que o dono já tenha feito pelo painel depois desta migração.
+    """
+    try:
+        antigo = conn.execute(
+            "SELECT id FROM produtos WHERE nome = 'Casquinha Simples (1 Bola)'"
+        ).fetchone()
+        if not antigo:
+            return
+        conn.execute(
+            "UPDATE produtos SET nome = 'Casquinha (1 Bola)', preco = 8.00 WHERE nome = 'Casquinha Simples (1 Bola)'"
+        )
+        conn.execute(
+            "UPDATE produtos SET nome = 'Cascão (2 Bolas)', preco = 15.00 WHERE nome = 'Cascão Crocante (2 Bolas)'"
+        )
+        # "Casquinha Dupla" e "Cestinha Especial" saem do cardápio público (disponivel = 0),
+        # mas continuam no banco para não quebrar pedidos antigos que as referenciam.
+        conn.execute(
+            "UPDATE produtos SET disponivel = 0 WHERE nome IN ('Casquinha Dupla (2 Bolas)', 'Cestinha Especial (3 Bolas)')"
+        )
+        conn.commit()
+    except Exception as exc:  # nunca impedir o sistema de subir por causa disso
+        print(f"Aviso: migração de casquinhas/cascões não aplicada: {exc}")
 
 
 def ensure_default_users(conn):
