@@ -10,6 +10,7 @@ const ConeIlustra = (() => {
         { id: "Picolé", nome: "Picolé" },
         { id: "Taças Especiais", nome: "Taças Especiais" },
         { id: "Pote / Viagem", nome: "Potes para viagem" },
+        { id: "Isopor", nome: "Isopor" },
         { id: "Bebidas", nome: "Bebidas" },
         { id: "Adicional / Calda", nome: "Adicionais" },
     ];
@@ -158,7 +159,7 @@ const ConeIlustra = (() => {
             if (nome.includes("frutilly")) return desenhos.picole("#fdba74", "#fb923c", "#fff0e0", faixa("#f43f5e"));
             return desenhos.picole("#fb7fb4", "#f472b6", "#ffe3ea", `<path d="M13 16h22v8H13z" fill="#fff1b8"/><path d="M13 24h22v-0.500" stroke="#f3d266" stroke-width="0"/>`);
         }
-        if (nome.includes("pote") || cat === "Pote / Viagem") return desenhos.pote();
+        if (nome.includes("pote") || nome.includes("isopor") || cat === "Pote / Viagem" || cat === "Isopor") return desenhos.pote();
         if (cat === "Adicional / Calda") return desenhos.adicional();
         if (nome.includes("cascalho") || nome.includes("casquinha") || nome.includes("cascao") || cat === "Casquinha / Cascão") {
             return desenhos.cone(numero(/(\d+)\s*(sabor|bola)/, 1));
@@ -309,6 +310,7 @@ const ConeIlustra = (() => {
         "Picolé": { nome: "picolé", categoria: "Picolé" },
         "Taças Especiais": { nome: "taça", categoria: "Taças Especiais" },
         "Pote / Viagem": { nome: "pote", categoria: "Pote / Viagem" },
+        "Isopor": { nome: "isopor 4 sabores", categoria: "Isopor" },
         "Bebidas": { nome: "água", categoria: "Bebidas" },
         "Adicional / Calda": { nome: "calda", categoria: "Adicional / Calda" },
     };
