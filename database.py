@@ -417,6 +417,7 @@ def init_db():
     ensure_default_users(conn)
     migrar_categorias_novas(conn)
     migrar_casquinhas_cascoes(conn)
+    migrar_produtos_isopor(conn)
     conn.close()
     _DB_INITIALIZED = True
 
@@ -475,6 +476,59 @@ def migrar_casquinhas_cascoes(conn):
         conn.commit()
     except Exception as exc:  # nunca impedir o sistema de subir por causa disso
         print(f"Aviso: migração de casquinhas/cascões não aplicada: {exc}")
+
+
+def migrar_produtos_isopor(conn):
+    """Adiciona a linha de potes de Isopor (P, M e G) ao cardápio, uma única vez.
+
+    Só roda enquanto nenhum produto usa a categoria "Isopor", para não duplicar
+    nem desfazer uma edição que o dono já tenha feito pelo painel depois.
+    """
+    try:
+        ja_tem = conn.execute(
+            "SELECT COUNT(*) as total FROM produtos WHERE categoria = 'Isopor'"
+        ).fetchone()
+        if ja_tem and ja_tem["total"] > 0:
+            return
+        isopores = [
+            (
+                "Isopor P — 2 sabores + 1 topping",
+                "Isopor",
+                "Você escolhe 2 sabores e leva 1 topping grátis",
+                18.99,
+                6.50,
+                1,
+                1,
+            ),
+            (
+                "Isopor M — 4 sabores + 2 toppings",
+                "Isopor",
+                "Você escolhe 4 sabores e leva 2 toppings grátis",
+                32.99,
+                11.50,
+                1,
+                1,
+            ),
+            (
+                "Isopor G — 6 sabores + 3 toppings",
+                "Isopor",
+                "Você escolhe 6 sabores e leva 3 toppings grátis",
+                62.99,
+                22.50,
+                1,
+                1,
+            ),
+        ]
+        conn.executemany(
+            """
+            INSERT INTO produtos (nome, categoria, sabor_detalhe, preco, custo_unitario, disponivel, destaque)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            isopores,
+        )
+        conn.commit()
+    except Exception as exc:  # nunca impedir o sistema de subir por causa disso
+        print(f"Aviso: migração dos produtos Isopor não aplicada: {exc}")
 
 
 def ensure_default_users(conn):
