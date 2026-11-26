@@ -191,6 +191,7 @@ const ConeIlustra = (() => {
         }
         if (nome.includes("cascalho") || nome.includes("casquinha") || nome.includes("cascao") || cat === "Casquinha / Cascão") return "p-cone";
         if (cat === "Copo / Sundae" || nome.includes("taca") || nome.includes("copo")) return "p-taca";
+        if (nome.includes("isopor") || cat === "Isopor") return "p-isopor";
         return null;
     }
     function molduraFoto(arquivo, tamanho) {
