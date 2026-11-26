@@ -812,12 +812,15 @@ const App = {
             const kpis = data.kpis || {};
             this.pedidosDelivery = data.pedidos || [];
 
-            // Toca o som só quando o nº de pedidos novos SOBE desde a última checagem
-            // (não na primeira carga após o login, pra não disparar com a fila já existente).
+            // Enquanto existir pedido "Novo / Recebido" na fila, o som toca a cada checagem
+            // (a cada 20s) pra lembrar sem parar até alguém clicar em "Preparar". O toast só
+            // aparece quando o total sobe, pra não poluir a tela a cada repetição do som.
             const totalNovosAgora = kpis.novos ?? 0;
             if (this._ultimoTotalNovos !== null && totalNovosAgora > this._ultimoTotalNovos) {
-                this.tocarSomNovoPedido();
                 this.toast("🔔 Novo pedido recebido na fila de delivery!");
+            }
+            if (totalNovosAgora > 0) {
+                this.tocarSomNovoPedido();
             }
             this._ultimoTotalNovos = totalNovosAgora;
 
