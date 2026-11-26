@@ -22,6 +22,11 @@ const App = {
         if (despMesEl) despMesEl.value = mesAtual;
 
         // Sessão: token assinado pelo servidor, validado a cada abertura da página
+        // Destrava o som de notificação no primeiro clique em qualquer lugar da página.
+        // Cobre o caso de a sessão já estar aberta (token salvo) e a pessoa nunca passar
+        // pela tela de login nesta aba — sem isso, o navegador bloqueia o áudio por script.
+        document.addEventListener("click", () => this._prepararAudio(), { once: true });
+
         this.authToken = sessionStorage.getItem("cone_magico_token") || "";
         if (this.authToken) {
             try {
@@ -123,11 +128,17 @@ const App = {
         }
     },
 
-    tocarSomNovoPedido() {
+    async tocarSomNovoPedido() {
         try {
             this._prepararAudio();
             const ctx = this._audioCtx;
             if (!ctx) return;
+            // Garante que o contexto esteja mesmo rodando antes de agendar as notas;
+            // resume() é assíncrono, então sem esperar aqui as notas podiam ser
+            // agendadas e "tocar e acabar" antes do áudio voltar a funcionar.
+            if (ctx.state === "suspended") {
+                await ctx.resume();
+            }
             const tocarNota = (freq, inicio, duracao) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
