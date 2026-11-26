@@ -9,6 +9,9 @@ const App = {
     carrinhoPDV: [],
     categoriaPDV: "",
     modoGrafico: "pizza",
+    _pedidosPollingId: null,
+    _ultimoTotalNovos: null,
+    _audioCtx: null,
 
     async init() {
         const hoje = new Date().toISOString().slice(0, 10);
@@ -43,6 +46,10 @@ const App = {
     },
 
     async fazerLogin() {
+        // Prepara o som de notificação aqui (clique do usuário) porque os navegadores só
+        // deixam tocar áudio por código depois de uma interação direta da pessoa.
+        this._prepararAudio();
+
         const email = document.getElementById("login-email").value.trim();
         const senha = document.getElementById("login-senha").value;
         const erroEl = document.getElementById("login-erro");
@@ -86,11 +93,59 @@ const App = {
         } else {
             this.navigate("pdv");
         }
+
+        // Fica checando por pedidos novos mesmo com o usuário em outra aba do painel.
+        if (this._pedidosPollingId) clearInterval(this._pedidosPollingId);
+        this._pedidosPollingId = setInterval(() => this.loadDelivery(), 20000);
     },
 
     logout() {
+        if (this._pedidosPollingId) {
+            clearInterval(this._pedidosPollingId);
+            this._pedidosPollingId = null;
+        }
+        this._ultimoTotalNovos = null;
         this.mostrarTelaLogin();
         this.toast("Sessão encerrada com segurança.");
+    },
+
+    _prepararAudio() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx && !this._audioCtx) {
+                this._audioCtx = new AudioCtx();
+            }
+            if (this._audioCtx && this._audioCtx.state === "suspended") {
+                this._audioCtx.resume();
+            }
+        } catch (_) {
+            // Navegador sem suporte a áudio por código: o painel continua funcionando normalmente, só sem o som.
+        }
+    },
+
+    tocarSomNovoPedido() {
+        try {
+            this._prepararAudio();
+            const ctx = this._audioCtx;
+            if (!ctx) return;
+            const tocarNota = (freq, inicio, duracao) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, ctx.currentTime + inicio);
+                gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + inicio + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + inicio + duracao);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + inicio);
+                osc.stop(ctx.currentTime + inicio + duracao + 0.05);
+            };
+            tocarNota(880, 0, 0.18);
+            tocarNota(1175, 0.16, 0.28);
+        } catch (_) {
+            // Som é um extra; nunca deve travar o painel.
+        }
     },
 
     applyRolePermissions() {
@@ -745,6 +800,15 @@ const App = {
             const data = await this.api(`/api/delivery?${params.toString()}`);
             const kpis = data.kpis || {};
             this.pedidosDelivery = data.pedidos || [];
+
+            // Toca o som só quando o nº de pedidos novos SOBE desde a última checagem
+            // (não na primeira carga após o login, pra não disparar com a fila já existente).
+            const totalNovosAgora = kpis.novos ?? 0;
+            if (this._ultimoTotalNovos !== null && totalNovosAgora > this._ultimoTotalNovos) {
+                this.tocarSomNovoPedido();
+                this.toast("🔔 Novo pedido recebido na fila de delivery!");
+            }
+            this._ultimoTotalNovos = totalNovosAgora;
 
             const elNovos = document.getElementById("del-kpi-novos");
             if (elNovos) elNovos.textContent = kpis.novos ?? 0;
