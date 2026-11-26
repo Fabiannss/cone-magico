@@ -12,6 +12,7 @@ const App = {
     _pedidosPollingId: null,
     _ultimoTotalNovos: null,
     _audioCtx: null,
+    _listenerVisibilidadeAdicionado: false,
 
     async init() {
         const hoje = new Date().toISOString().slice(0, 10);
@@ -99,9 +100,24 @@ const App = {
             this.navigate("pdv");
         }
 
-        // Fica checando por pedidos novos mesmo com o usuário em outra aba do painel.
+        // Fica checando por pedidos novos mesmo com o usuário em outra tela do painel
+        // (PDV, Estoque, etc.) — o alerta (som + menu piscando) não depende de estar
+        // na tela de Delivery.
         if (this._pedidosPollingId) clearInterval(this._pedidosPollingId);
-        this._pedidosPollingId = setInterval(() => this.loadDelivery(), 20000);
+        this._pedidosPollingId = setInterval(() => this.loadDelivery(), 8000);
+
+        // Se o navegador tiver colocado a aba em segundo plano (ex: usuário foi pra
+        // outra aba do Chrome), ele atrasa o setInterval de propósito pra economizar
+        // bateria. Assim que a aba do painel volta a ficar visível, checa na hora em
+        // vez de esperar o próximo ciclo de 8s.
+        if (!this._listenerVisibilidadeAdicionado) {
+            document.addEventListener("visibilitychange", () => {
+                if (!document.hidden && this.currentUser) {
+                    this.loadDelivery();
+                }
+            });
+            this._listenerVisibilidadeAdicionado = true;
+        }
     },
 
     logout() {
