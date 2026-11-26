@@ -152,8 +152,15 @@ const App = {
                 osc.start(ctx.currentTime + inicio);
                 osc.stop(ctx.currentTime + inicio + duracao + 0.05);
             };
-            tocarNota(880, 0, 0.18);
-            tocarNota(1175, 0.16, 0.28);
+            // Repete o "ding-dong" por ~10s pra dar tempo de ouvir mesmo longe do
+            // notebook, em vez de um bipe só (a próxima checagem, 20s depois, toca
+            // de novo se o pedido ainda estiver parado em "Novo / Recebido").
+            const DURACAO_TOTAL = 10; // segundos
+            const INTERVALO_REPETICAO = 1.4; // segundos entre cada repetição
+            for (let inicio = 0; inicio < DURACAO_TOTAL; inicio += INTERVALO_REPETICAO) {
+                tocarNota(880, inicio, 0.18);
+                tocarNota(1175, inicio + 0.16, 0.28);
+            }
         } catch (_) {
             // Som é um extra; nunca deve travar o painel.
         }
