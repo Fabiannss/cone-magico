@@ -110,6 +110,7 @@ const App = {
             this._pedidosPollingId = null;
         }
         this._ultimoTotalNovos = null;
+        document.getElementById("nav-btn-delivery")?.classList.remove("nav-btn-alerta");
         this.mostrarTelaLogin();
         this.toast("Sessão encerrada com segurança.");
     },
@@ -843,6 +844,13 @@ const App = {
                 this.tocarSomNovoPedido();
             }
             this._ultimoTotalNovos = totalNovosAgora;
+
+            // Pisca o menu "Delivery & Cardápio Online" junto com o som, até o
+            // pedido ser movido para "Em Preparo".
+            const navBtnDelivery = document.getElementById("nav-btn-delivery");
+            if (navBtnDelivery) {
+                navBtnDelivery.classList.toggle("nav-btn-alerta", totalNovosAgora > 0);
+            }
 
             const elNovos = document.getElementById("del-kpi-novos");
             if (elNovos) elNovos.textContent = kpis.novos ?? 0;
