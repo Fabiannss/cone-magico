@@ -139,27 +139,40 @@ const App = {
             if (ctx.state === "suspended") {
                 await ctx.resume();
             }
-            const tocarNota = (freq, inicio, duracao) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = "sine";
-                osc.frequency.value = freq;
-                gain.gain.setValueAtTime(0, ctx.currentTime + inicio);
-                gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + inicio + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + inicio + duracao);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(ctx.currentTime + inicio);
-                osc.stop(ctx.currentTime + inicio + duracao + 0.05);
+            // Som de "sino" (fundamental + 2 harmônicos, como um sininho de recepção)
+            // em vez de um bipe eletrônico puro.
+            const tocarSino = (freq, inicio, duracao) => {
+                const harmonicos = [
+                    { mult: 1, vol: 0.3 },
+                    { mult: 2, vol: 0.12 },
+                    { mult: 3, vol: 0.05 },
+                ];
+                harmonicos.forEach(({ mult, vol }) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "triangle";
+                    osc.frequency.value = freq * mult;
+                    gain.gain.setValueAtTime(0, ctx.currentTime + inicio);
+                    gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + inicio + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + inicio + duracao);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + inicio);
+                    osc.stop(ctx.currentTime + inicio + duracao + 0.05);
+                });
             };
-            // Repete o "ding-dong" por ~10s pra dar tempo de ouvir mesmo longe do
-            // notebook, em vez de um bipe só (a próxima checagem, 20s depois, toca
-            // de novo se o pedido ainda estiver parado em "Novo / Recebido").
+            // Repete um "tim-tim-tim!" ascendente por ~10s pra dar tempo de ouvir mesmo
+            // longe do notebook (a próxima checagem, 20s depois, toca de novo se o
+            // pedido ainda estiver parado em "Novo / Recebido").
+            const NOTAS = [783.99, 987.77, 1174.66]; // Sol5, Si5, Ré6 — soa alegre e chamativo
+            const ESPACO_ENTRE_NOTAS = 0.16;
+            const DURACAO_NOTA = 0.5;
             const DURACAO_TOTAL = 10; // segundos
-            const INTERVALO_REPETICAO = 1.4; // segundos entre cada repetição
-            for (let inicio = 0; inicio < DURACAO_TOTAL; inicio += INTERVALO_REPETICAO) {
-                tocarNota(880, inicio, 0.18);
-                tocarNota(1175, inicio + 0.16, 0.28);
+            const INTERVALO_REPETICAO = 1.8; // segundos entre cada "tim-tim-tim!"
+            for (let cicloInicio = 0; cicloInicio < DURACAO_TOTAL; cicloInicio += INTERVALO_REPETICAO) {
+                NOTAS.forEach((freq, i) => {
+                    tocarSino(freq, cicloInicio + i * ESPACO_ENTRE_NOTAS, DURACAO_NOTA);
+                });
             }
         } catch (_) {
             // Som é um extra; nunca deve travar o painel.
