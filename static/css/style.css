@@ -693,6 +693,16 @@ tr:hover td {
     background: #fecaca;
 }
 
+.btn-success {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+.btn-success:hover {
+    background: #bbf7d0;
+}
+
 .btn-sm {
     padding: 0.38rem 0.75rem;
     font-size: 0.8rem;
