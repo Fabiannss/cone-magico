@@ -549,6 +549,8 @@ const App = {
         document.getElementById("pdv-desconto").value = "0.00";
         document.getElementById("pdv-observacoes").value = "";
         document.getElementById("pdv-cliente").value = "";
+        const telInput = document.getElementById("pdv-cliente-telefone");
+        if (telInput) telInput.value = "";
         this.aoSelecionarClientePDV();
         this.renderCarrinhoPDV();
     },
@@ -556,6 +558,7 @@ const App = {
     aoSelecionarClientePDV() {
         const cliId = document.getElementById("pdv-cliente")?.value;
         const infoEl = document.getElementById("pdv-cliente-fidelidade-info");
+        const telInput = document.getElementById("pdv-cliente-telefone");
         if (!infoEl) return;
         if (!cliId) {
             infoEl.style.display = "none";
@@ -565,6 +568,9 @@ const App = {
         if (!cli) {
             infoEl.style.display = "none";
             return;
+        }
+        if (telInput && !telInput.value && cli.telefone) {
+            telInput.value = cli.telefone;
         }
         infoEl.style.display = "block";
         const pts = cli.pontos_fidelidade || 0;
@@ -622,6 +628,7 @@ const App = {
             const body = {
                 itens: this.carrinhoPDV,
                 cliente_id: document.getElementById("pdv-cliente").value || null,
+                cliente_telefone: (document.getElementById("pdv-cliente-telefone").value || "").trim(),
                 tipo_atendimento: document.getElementById("pdv-tipo-atendimento").value,
                 desconto: document.getElementById("pdv-desconto").value || 0,
                 forma_pagamento: document.getElementById("pdv-forma-pagamento").value,
@@ -680,6 +687,7 @@ const App = {
                 <td>
                     <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
                         <button class="btn btn-sm btn-secondary" onclick="App.emitirCupomPorId(${v.id})">🧾 Cupom</button>
+                        <button class="btn btn-sm btn-success" onclick="App.enviarCupomWhatsApp(${v.id})">📲 WhatsApp</button>
                         ${
                             v.status !== "Cancelada"
                                 ? `<button class="btn btn-sm btn-danger" onclick="App.cancelarVenda(${v.id})">✕</button>`
@@ -695,6 +703,53 @@ const App = {
     emitirCupomPorId(id) {
         const venda = (this.vendas || []).find((v) => v.id === id);
         if (venda) this.emitirCupomVenda(venda);
+    },
+
+    montarItensCupom(v) {
+        try {
+            return JSON.parse(v.itens_json || "[]");
+        } catch (_) {
+            return null;
+        }
+    },
+
+    montarMensagemCupomWhats(v) {
+        const itens = this.montarItensCupom(v);
+        const linhas = [];
+        linhas.push("🍦 *Sorveteria Cone Mágico*");
+        linhas.push(`Cupom do Pedido #${v.codigo_pedido}`);
+        linhas.push("");
+        if (itens) {
+            itens.forEach((i) => linhas.push(`${i.qtd}x ${i.nome} — ${this.formatBRL(i.subtotal)}`));
+        } else {
+            linhas.push(v.itens_resumo || "");
+        }
+        linhas.push("");
+        if (Number(v.desconto || 0) > 0) {
+            linhas.push(`Desconto: - ${this.formatBRL(v.desconto)}`);
+        }
+        linhas.push(`*Total: ${this.formatBRL(v.valor_total)}* (${v.forma_pagamento})`);
+        linhas.push("");
+        linhas.push("Obrigado pela preferência! Volte sempre 🍦");
+        return linhas.join("\n");
+    },
+
+    enviarCupomWhatsApp(id) {
+        const venda = (this.vendas || []).find((v) => v.id === id);
+        if (!venda) return;
+        let telefone = (venda.cliente_telefone || "").trim();
+        if (!telefone) {
+            telefone = prompt(`Informe o WhatsApp do cliente para enviar o cupom do pedido #${venda.codigo_pedido}:`, "");
+            if (!telefone) return;
+        }
+        const digits = telefone.replace(/\D/g, "");
+        if (digits.length < 10) {
+            this.toast("Informe um número de WhatsApp válido, com DDD.");
+            return;
+        }
+        const telComPais = digits.length <= 11 ? `55${digits}` : digits;
+        const mensagem = this.montarMensagemCupomWhats(venda);
+        window.open(`https://wa.me/${telComPais}?text=${encodeURIComponent(mensagem)}`, "_blank");
     },
 
     emitirCupomVenda(v) {
@@ -714,6 +769,9 @@ const App = {
             itensHtml = `<tr><td colspan="2">${v.itens_resumo}</td></tr>`;
         }
 
+        const mensagemWhats = this.montarMensagemCupomWhats(v);
+        const telDigitsInicial = (v.cliente_telefone || "").replace(/\D/g, "");
+
         const win = window.open("", "_blank", "width=420,height=640");
         win.document.write(`
             <html>
@@ -725,9 +783,18 @@ const App = {
                     .center { text-align: center; }
                     table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
                     .divider { border-top: 1px dashed #64748b; margin: 10px 0; }
+                    .acoes-cupom { display: flex; gap: 8px; margin-bottom: 14px; }
+                    .acoes-cupom button { flex: 1; padding: 9px; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; }
+                    .btn-whats { background: #25d366; color: #fff; }
+                    .btn-imprimir { background: #334155; color: #fff; }
+                    @media print { .acoes-cupom { display: none; } }
                 </style>
             </head>
             <body>
+                <div class="acoes-cupom">
+                    <button class="btn-whats" onclick="enviarWhats()">📲 Enviar no WhatsApp</button>
+                    <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir</button>
+                </div>
                 <div class="cupom-box">
                     <div class="center">
                         <img src="/static/img/logo.svg" style="width:60px; height:60px;"><br>
@@ -793,7 +860,26 @@ const App = {
                         Obrigado pela preferência! Volte sempre! 🍦
                     </div>
                 </div>
-                <script>setTimeout(() => window.print(), 250);</script>
+                <script>
+                    const TEL_INICIAL = ${JSON.stringify(telDigitsInicial)};
+                    const MENSAGEM_WHATS = ${JSON.stringify(mensagemWhats)};
+                    const CODIGO_PEDIDO = ${JSON.stringify(v.codigo_pedido || "")};
+                    function enviarWhats() {
+                        let tel = TEL_INICIAL;
+                        if (!tel) {
+                            const digitado = window.prompt("Informe o WhatsApp do cliente para enviar o cupom do pedido #" + CODIGO_PEDIDO + ":", "");
+                            if (!digitado) return;
+                            tel = digitado.replace(/\\D/g, "");
+                        }
+                        if (tel.length < 10) {
+                            window.alert("Informe um número de WhatsApp válido, com DDD.");
+                            return;
+                        }
+                        const telComPais = tel.length <= 11 ? "55" + tel : tel;
+                        window.open("https://wa.me/" + telComPais + "?text=" + encodeURIComponent(MENSAGEM_WHATS), "_blank");
+                    }
+                    setTimeout(() => window.print(), 250);
+                </script>
             </body>
             </html>
         `);

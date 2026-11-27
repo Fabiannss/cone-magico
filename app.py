@@ -986,6 +986,7 @@ def handle_create_venda(body: dict, headers: dict):
         raise APIError("Adicione pelo menos 1 item da sorveteria ao pedido antes de finalizar.")
 
     cliente_id = int(body["cliente_id"]) if body.get("cliente_id") else None
+    cliente_telefone = (body.get("cliente_telefone") or "").strip()
     desconto = float(body.get("desconto") or 0.0)
     forma_pagamento = body.get("forma_pagamento") or "PIX"
     tipo_atendimento = body.get("tipo_atendimento") or "Balcão"
@@ -1034,8 +1035,9 @@ def handle_create_venda(body: dict, headers: dict):
         INSERT INTO vendas (
             codigo_pedido, cliente_id, funcionario_id, data_venda, hora_venda,
             itens_resumo, itens_json, quantidade_sorvetes, subtotal, desconto,
-            valor_total, forma_pagamento, tipo_atendimento, status, observacoes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Concluída', ?)
+            valor_total, forma_pagamento, tipo_atendimento, status, observacoes,
+            cliente_telefone
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Concluída', ?, ?)
         """,
         (
             codigo_pedido,
@@ -1052,6 +1054,7 @@ def handle_create_venda(body: dict, headers: dict):
             forma_pagamento,
             tipo_atendimento,
             observacoes,
+            cliente_telefone,
         ),
     )
     venda_id = cur.lastrowid
@@ -1106,7 +1109,8 @@ def handle_create_venda(body: dict, headers: dict):
     venda_criada = row_to_dict(
         conn.execute(
             """
-            SELECT v.*, c.nome as cliente_nome, c.cpf as cliente_cpf, u.nome as funcionario_nome
+            SELECT v.*, c.nome as cliente_nome, c.cpf as cliente_cpf, u.nome as funcionario_nome,
+                   COALESCE(c.telefone, v.cliente_telefone) as cliente_telefone
             FROM vendas v
             LEFT JOIN clientes c ON c.id = v.cliente_id
             LEFT JOIN usuarios u ON u.id = v.funcionario_id
